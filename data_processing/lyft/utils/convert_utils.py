@@ -78,8 +78,8 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict
                 if instance_token not in instance_dict[cur_index]:
                     for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
                         mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])
-                        points[i][lidar_name] = points[i][lidar_name][:, ~mask]
-                        labels[i][lidar_name] = labels[i][lidar_name][~mask]
+                        points[i][lidar_name] = np.delete(points[i][lidar_name], mask, axis=1)
+                        labels[i][lidar_name] = np.delete(labels[i][lidar_name], mask)
                 else:
                     for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
                         mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])  
@@ -96,7 +96,7 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict
                         R = np.dot(V, U.T)
                         c = np.expand_dims(c_dst - c_src @ R, 1)
 
-                        curr_points = points[i][lidar_name][:, mask]
+                        curr_points = np.copy(points[i][lidar_name][:, mask])
                         # print(R.shape, c.shape, curr_points.shape)
                         curr_points[:-1] = np.add(R.T @ curr_points[:-1], c)
                         src_pose = poses[i][lidar_name]
@@ -113,10 +113,12 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict
                     points[i][lidar_name] = points[i][lidar_name][:, ~mask]
                     labels[i][lidar_name] = labels[i][lidar_name][~mask]
 
-            final_points["{}_{}".format(i-pre, lidar_name)] = np.dot(kwargs["kitti_to_lyft_lidar_inv"].rotation_matrix, points[i][lidar_name][:3]).T
-            final_labels["{}_{}".format(i-pre, lidar_name)] = labels[i][lidar_name]
-            final_poses["{}_{}".format(i-pre, lidar_name)] = poses[i][lidar_name]
-    
+        for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
+            points[i][lidar_name][:3] = np.dot(kwargs["kitti_to_lyft_lidar_inv"].rotation_matrix, points[i][lidar_name][:3])
+            final_points["{}_{}".format(i, lidar_name)] = points[i][lidar_name]
+            final_labels["{}_{}".format(i, lidar_name)] = labels[i][lidar_name]
+            final_poses["{}_{}".format(i, lidar_name)] = poses[i][lidar_name]
+        
     return final_points, final_poses, final_labels
 
 
@@ -172,7 +174,8 @@ def convert_one_scene(scene_index, lyft_data, **kwargs):
 
     # Convert all frames in the scene.
     print("Converting frames...")
-    for i in tqdm(range(len(sample_tokens))):
+    # for i in tqdm(range(len(sample_tokens))):
+    for i in tqdm(range(38, 62)):
         final_points, final_poses, final_labels = convert_one_frame(
             i, 
             kwargs["aggregate_pre"], 

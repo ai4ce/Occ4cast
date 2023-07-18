@@ -18,7 +18,7 @@ parser.add_argument('--p_pre', type=int, default=10, help='number of frames to i
 parser.add_argument('--p_post', type=int, default=10, help='number of frames to input after the current frame')
 args = parser.parse_args()
 
-kitti_to_lyft_lidar = Quaternion(axis=(0, 0, 1), angle=np.pi)
+kitti_to_lyft_lidar = Quaternion(axis=(0, 0, 1), angle=np.pi / 2)
 kitti_to_lyft_lidar_inv = kitti_to_lyft_lidar.inverse
 with open('config/class_map.yaml', 'r') as f:
     class_map = yaml.safe_load(f)

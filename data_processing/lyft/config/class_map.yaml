@@ -1,5 +1,5 @@
 free: 0
-occupied: 1
+unlabeled: 1
 animal: 2
 bicycle: 3
 bus: 4
