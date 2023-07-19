@@ -216,7 +216,9 @@ if __name__ == "__main__":
         save_dir = os.path.join(out_dir, "{:04d}".format(i))
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        for j in tqdm(range(12, 13), leave=False):
+        start_frame = args.p_pre
+        end_frame = len(velodyne_files) - args.p_post
+        for j in tqdm(range(start_frame, end_frame), leave=False):
             main_func(
                 velodyne_files, 
                 poses_files, 

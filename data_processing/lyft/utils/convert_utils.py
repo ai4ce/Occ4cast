@@ -199,8 +199,8 @@ def convert_one_scene(scene_index, lyft_data, **kwargs):
 
     # Convert all frames in the scene.
     print("Converting frames...")
-    # for i in tqdm(range(len(sample_tokens))):
-    for i in tqdm(range(38, 62)):
+    for i in tqdm(range(len(sample_tokens))):
+    # for i in tqdm(range(38, 62)):
         final_points, final_poses, final_labels = convert_one_frame(
             i, 
             kwargs["aggregate_pre"], 
