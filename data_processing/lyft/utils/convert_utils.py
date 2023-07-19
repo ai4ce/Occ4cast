@@ -3,7 +3,8 @@ import copy
 import pathlib
 from tqdm import tqdm
 import numpy as np
-import matplotlib.pyplot as plt
+from PIL import Image
+
 from lyft_dataset_sdk.lyftdataset import LyftDataset
 from lyft_dataset_sdk.utils.data_classes import LidarPointCloud, Box
 from lyft_dataset_sdk.utils.geometry_utils import BoxVisibility, transform_matrix, view_points
@@ -12,10 +13,21 @@ from utils.ray_traversal import *
 from utils.geometry_utils import *
 
 
-def loat_one_frame(sample_token, lyft_data):
+LIDAR_NAMES = ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]
+CAM_NAMES = [
+    "CAM_FRONT", 
+    "CAM_FRONT_LEFT", 
+    "CAM_FRONT_RIGHT", 
+    "CAM_BACK", 
+    "CAM_BACK_LEFT", 
+    "CAM_BACK_RIGHT"
+]
+
+def load_one_frame(sample_token, lyft_data):
     points = {}
     labels = {}
     poses = {}
+    images = {}
     instance_dict = {}
     sample = lyft_data.get('sample', sample_token)
 
@@ -25,7 +37,7 @@ def loat_one_frame(sample_token, lyft_data):
         sample_annotation = lyft_data.get('sample_annotation', token)
         instance_token = sample_annotation['instance_token']
         instance_dict[instance_token] = {}
-        for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
+        for lidar_name in LIDAR_NAMES:
             _, instance_box, _ = lyft_data.get_sample_data(
                 sample['data'][lidar_name],
                 box_vis_level=BoxVisibility.NONE,
@@ -33,9 +45,14 @@ def loat_one_frame(sample_token, lyft_data):
             )
             instance_dict[instance_token][lidar_name] = instance_box[0]
 
+    # Get all images in the frame.
+    for cam_name in CAM_NAMES:
+        cam_data = lyft_data.get('sample_data', sample['data'][cam_name])
+        cam_filepath = os.path.join(lyft_data.data_path, cam_data['filename'])
+        images[cam_name] = Image.open(cam_filepath)
 
     # Get the point cloud and sensor pose in the frame.
-    for lidar_sensor in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
+    for lidar_sensor in LIDAR_NAMES:
         lidar_data = lyft_data.get('sample_data', sample['data'][lidar_sensor])
         ego_pose = lyft_data.get('ego_pose', lidar_data['ego_pose_token'])
         lidar_pose = lyft_data.get('calibrated_sensor', lidar_data['calibrated_sensor_token'])
@@ -61,7 +78,7 @@ def loat_one_frame(sample_token, lyft_data):
         labels[lidar_sensor] = np.ones(point_cloud.points.shape[1], dtype=np.uint8)
         poses[lidar_sensor] = global_pose
         
-    return points, poses, labels, instance_dict
+    return points, poses, labels, images, instance_dict
 
 
 def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict, **kwargs):
@@ -76,12 +93,12 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict
         if i != cur_index:
             for instance_token in instance_dict[i]:
                 if instance_token not in instance_dict[cur_index]:
-                    for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
+                    for lidar_name in LIDAR_NAMES:
                         mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])
                         points[i][lidar_name] = np.delete(points[i][lidar_name], mask, axis=1)
                         labels[i][lidar_name] = np.delete(labels[i][lidar_name], mask)
                 else:
-                    for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
+                    for lidar_name in LIDAR_NAMES:
                         mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])  
                         if not np.any(mask): continue
                         dst_box = np.copy(instance_dict[cur_index][instance_token]["LIDAR_TOP"].corners()).T
@@ -108,12 +125,12 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict
                         labels[i][lidar_name][mask] = kwargs["class_map"][instance_name]
         else:
             for instance_token in instance_dict[i]:
-                for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
+                for lidar_name in LIDAR_NAMES:
                     mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])
                     points[i][lidar_name] = points[i][lidar_name][:, ~mask]
                     labels[i][lidar_name] = labels[i][lidar_name][~mask]
 
-        for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
+        for lidar_name in LIDAR_NAMES:
             points[i][lidar_name][:3] = np.dot(kwargs["kitti_to_lyft_lidar_inv"].rotation_matrix, points[i][lidar_name][:3])
             final_points["{}_{}".format(i, lidar_name)] = points[i][lidar_name]
             final_labels["{}_{}".format(i, lidar_name)] = labels[i][lidar_name]
@@ -123,8 +140,11 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict
 
 
 def convert_one_scene(scene_index, lyft_data, **kwargs):
-    save_path = os.path.join(kwargs["output_path"], "point_cloud", "{:04d}".format(scene_index))
-    os.makedirs(save_path, exist_ok=True)
+    save_path_pcd = os.path.join(kwargs["output_path"], "point_cloud", "{:04d}".format(scene_index))
+    save_path_calib = os.path.join(kwargs["output_path"], "calib", "{:04d}".format(scene_index))
+    save_path_image = os.path.join(kwargs["output_path"], "image", "{:04d}".format(scene_index))
+    for path in [save_path_pcd, save_path_calib, save_path_image]:
+        os.makedirs(path, exist_ok=True)
     
     scene = lyft_data.scene[scene_index]
 
@@ -133,25 +153,25 @@ def convert_one_scene(scene_index, lyft_data, **kwargs):
     while lyft_data.get('sample', sample_tokens[-1])['next']:
         sample_tokens.append(lyft_data.get('sample', sample_tokens[-1])['next'])
 
-    # Load lidar calibration
-    lidar_calib = {}
-    for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
+    # Load camera calibration.
+    cam_intrinsics = {}
+    cam_extrinsics = {}
+    for cam_name in CAM_NAMES:
         cs_token = lyft_data.get(
-            "sample_data", 
-            lyft_data.get("sample", sample_tokens[0])["data"][lidar_name]
-        )["calibrated_sensor_token"]
-        lidar_calib[lidar_name] = lyft_data.get("calibrated_sensor", cs_token)
-        lidar_to_ego = transform_matrix(
-            lidar_calib[lidar_name]["translation"], 
-            Quaternion(lidar_calib[lidar_name]["rotation"]), 
+            "sample_data",
+            lyft_data.get("sample", sample_tokens[0])["data"][cam_name]
+        )
+        cs = lyft_data.get("calibrated_sensor", cs_token["calibrated_sensor_token"])
+        intrinsic = np.array(cs["camera_intrinsic"])
+        extrinsic = transform_matrix(
+            cs["translation"],
+            Quaternion(cs["rotation"]),
             inverse=False
         )
-        lidar_to_ego_kitti = np.dot(lidar_to_ego, kwargs["kitti_to_lyft_lidar"].transformation_matrix)
-        lidar_to_ego_kitti_inv = np.linalg.inv(lidar_to_ego_kitti)
-        lidar_calib[lidar_name] = {
-            "Tr": lidar_to_ego_kitti, 
-            "Tr_inv": lidar_to_ego_kitti_inv
-        }
+        cam_intrinsics[cam_name] = intrinsic
+        cam_extrinsics[cam_name] = extrinsic
+    np.savez_compressed(os.path.join(save_path_calib, "cam_intrinsics"), **cam_intrinsics)
+    np.savez_compressed(os.path.join(save_path_calib, "cam_extrinsics"), **cam_extrinsics)
     
     # Load all frames in the scene.
     points = []
@@ -159,10 +179,10 @@ def convert_one_scene(scene_index, lyft_data, **kwargs):
     labels = []
     instance_tokens = []
 
-    # Load all frames in the scene.
+    # Load all frames in the scene and convert images.
     print("Loading frames...")
-    for sample_token in tqdm(sample_tokens):
-        frame_points, frame_poses, frame_labels, frame_instances = loat_one_frame(
+    for i, sample_token in enumerate(tqdm(sample_tokens)):
+        frame_points, frame_poses, frame_labels, frame_images, frame_instances = load_one_frame(
             sample_token, 
             lyft_data
         )
@@ -170,7 +190,12 @@ def convert_one_scene(scene_index, lyft_data, **kwargs):
         poses.append(frame_poses)
         labels.append(frame_labels)
         instance_tokens.append(frame_instances)
+
+        for cam_name in CAM_NAMES:
+            save_filename = "{:04d}_{}".format(i, cam_name)
+            frame_images[cam_name].save(os.path.join(save_path_image, save_filename + ".jpg"))
     print("Done.\n")
+    assert()
 
     # Convert all frames in the scene.
     print("Converting frames...")
@@ -187,9 +212,9 @@ def convert_one_scene(scene_index, lyft_data, **kwargs):
             **kwargs
         )
 
-        points_path = os.path.join(save_path, "{:04d}_point".format(i))
-        poses_path = os.path.join(save_path, "{:04d}_pose".format(i))
-        labels_path = os.path.join(save_path, "{:04d}_label".format(i))
+        points_path = os.path.join(save_path_pcd, "{:04d}_point".format(i))
+        poses_path = os.path.join(save_path_pcd, "{:04d}_pose".format(i))
+        labels_path = os.path.join(save_path_pcd, "{:04d}_label".format(i))
         np.savez_compressed(points_path, **final_points)
         np.savez_compressed(poses_path, **final_poses)
         np.savez_compressed(labels_path, **final_labels)
