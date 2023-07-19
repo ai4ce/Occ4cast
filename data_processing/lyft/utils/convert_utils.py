@@ -81,7 +81,7 @@ def load_one_frame(sample_token, lyft_data):
     return points, poses, labels, images, instance_dict
 
 
-def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict, **kwargs):
+def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict, kwargs):
     pre = max(0, cur_index - pre)
     post = min(len(instance_dict), cur_index + post)
 
@@ -139,7 +139,9 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict
     return final_points, final_poses, final_labels
 
 
-def convert_one_scene(scene_index, lyft_data, **kwargs):
+def convert_one_scene(scene_index, lyft_data, kwargs, multiprocessing=False):
+    if multiprocessing:
+        print("Scene {} started.".format(scene_index))
     save_path_pcd = os.path.join(kwargs["output_path"], "point_cloud", "{:04d}".format(scene_index))
     save_path_calib = os.path.join(kwargs["output_path"], "calib", "{:04d}".format(scene_index))
     save_path_image = os.path.join(kwargs["output_path"], "image", "{:04d}".format(scene_index))
@@ -195,7 +197,6 @@ def convert_one_scene(scene_index, lyft_data, **kwargs):
             save_filename = "{:04d}_{}".format(i, cam_name)
             frame_images[cam_name].save(os.path.join(save_path_image, save_filename + ".jpg"))
     print("Done.\n")
-    assert()
 
     # Convert all frames in the scene.
     print("Converting frames...")
@@ -209,7 +210,7 @@ def convert_one_scene(scene_index, lyft_data, **kwargs):
             copy.deepcopy(poses), 
             copy.deepcopy(labels), 
             instance_tokens, 
-            **kwargs
+            kwargs
         )
 
         points_path = os.path.join(save_path_pcd, "{:04d}_point".format(i))
@@ -218,3 +219,6 @@ def convert_one_scene(scene_index, lyft_data, **kwargs):
         np.savez_compressed(points_path, **final_points)
         np.savez_compressed(poses_path, **final_poses)
         np.savez_compressed(labels_path, **final_labels)
+
+    if multiprocessing:
+        print("Scene {} done.".format(scene_index))

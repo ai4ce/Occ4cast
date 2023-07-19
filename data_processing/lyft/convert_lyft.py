@@ -5,6 +5,7 @@ from pyquaternion import Quaternion
 import numpy as np
 from lyft_dataset_sdk.lyftdataset import LyftDataset
 from utils.convert_utils import convert_one_scene
+from multiprocessing import Pool
 
 
 parser = argparse.ArgumentParser()
@@ -16,6 +17,7 @@ parser.add_argument('--a_pre', type=int, default=70, help='number of frames to a
 parser.add_argument('--a_post', type=int, default=70, help='number of frames to aggregrate after the current frame')
 parser.add_argument('--p_pre', type=int, default=10, help='number of frames to input before the current frame')
 parser.add_argument('--p_post', type=int, default=10, help='number of frames to input after the current frame')
+parser.add_argument('-m', '--multi', action='store_true', help='whether to use multiprocessing')
 args = parser.parse_args()
 
 kitti_to_lyft_lidar = Quaternion(axis=(0, 0, 1), angle=np.pi / 2)
@@ -38,5 +40,11 @@ config = {
 
 os.makedirs(args.output_path, exist_ok=True)
 
-for scene_index in range(args.start, args.end):
-    convert_one_scene(scene_index, lyft_data, **config)
+if args.multi:
+    arguments = [(scene_index, lyft_data, config, True) for scene_index in range(args.start, args.end)]
+    with Pool(24) as p:
+        print("Start multiprocessing.")
+        p.starmap(convert_one_scene, arguments)
+else:
+    for scene_index in range(args.start, args.end):
+        convert_one_scene(scene_index, lyft_data, config)

@@ -6,7 +6,7 @@ OUTPUT_PATH=/home/xl3136/lyft_kitti/train
 
 # Start and end scene index
 START=0
-END=1
+END=180
 
 # Number of frames to aggregrate
 A_PRE=70
