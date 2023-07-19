@@ -9,9 +9,9 @@ NOT_OBSERVED = -1
 FREE = 0
 OCCUPIED = 1
 FREE_LABEL = 0
-MAX_POINT_NUM = 10
-TERRAIN_LABEL = 72
-SIDEWALK_LABEL = 48
+# MAX_POINT_NUM = 10
+# TERRAIN_LABEL = 72
+# SIDEWALK_LABEL = 48
 BINARY_OBSERVED = 1
 BINARY_NOT_OBSERVED = 0
 # DO NOT CHANGE
@@ -239,11 +239,6 @@ def ray_traversal(
         auto distance2end = abs(current_voxel[0] - last_voxel[0]) * voxel_size_[0] + abs(current_voxel[1] - last_voxel[1]) * voxel_size_[1] + abs(current_voxel[2] - last_voxel[2]) * voxel_size_[2];
         auto distance2start_height = abs(current_voxel[2] - target_voxel[2]) * voxel_size_[2];
         if(distance2start>{DISTANCE_THESHOLD_IGNORE} && distance2end>{DISTANCE_THESHOLD_IGNORE}){{
-            if($points_labels_inrange[i]=={TERRAIN_LABEL} || $points_labels_inrange[i]<={SIDEWALK_LABEL}){{
-                if(distance2start_height < {RAY_ROAD_IGNORE_DISTANCE}){{
-                    continue;
-                }}
-            }}
             auto old = atomicAdd($voxel_free_count + currentIdx, 1);
         }}
     }}
@@ -270,40 +265,6 @@ def ray_traversal(
     zz = torch.arange(0, voxel_state.shape[2]).to(_device)
     grid_x, grid_y, grid_z = torch.meshgrid(xx, yy, zz, indexing='ij')
     voxel_coors = torch.stack([grid_x, grid_y, grid_z], axis=-1)
-
-    # # vis ray
-    # debug_tensor = debug_tensor[debug_tensor[:,0]!=-1]
-    # debug_tensor = debug_tensor.long()
-    # inds = _indice_to_scalar(debug_tensor[2:], voxel_state.shape)
-    # voxel_label_vis = voxel_label.clone()
-    # voxel_show = voxel_state==OCCUPIED
-    # voxel_show_squeeze = voxel_show.reshape(-1)
-    # voxel_show_squeeze[inds] = True
-    # voxel_label_vis_squeeze = voxel_label_vis.reshape(-1)
-    # voxel_label_vis_squeeze[inds] = 2
-    # print(idx_tensor.item(), debug_tensor[0], debug_tensor[1], )
-    # print(debug_tensor)
-    # vis = vis_occ.main(voxel_label_vis.cpu(), voxel_show.cpu(), voxel_size=[1,1,1])
-    # vis.run()
-    # del vis
-    if VIS:
-        import open3d as o3d
-        from .. import vis_occ, vistool
-        voxel_show = voxel_occ_count > 0
-        vis = vis_occ.main(voxel_label.cpu(), voxel_show.cpu(), voxel_size=[1, 1, 1], vis=None, offset=[0, 0, 0])
-        # smooth occ
-        voxel_show = voxel_state == OCCUPIED
-        vis = vis_occ.main(voxel_label.cpu(), voxel_show.cpu(), voxel_size=[1, 1, 1], vis=vis,
-                           offset=[voxel_state.shape[0] * 1.2, 0, 0])
-        # deleted occ
-        voxel_show = voxel_occ_count > 0
-        voxel_label_vis = voxel_label.clone()
-        _remove = torch.logical_and(voxel_occ_count > 0, voxel_state != OCCUPIED)
-        voxel_label_vis[_remove] = 2  # red
-        vis = vis_occ.main(voxel_label_vis.cpu(), voxel_show.cpu(), voxel_size=[1, 1, 1], vis=vis,
-                           offset=[voxel_state.shape[0] * 1.2 * 2, 0, 0])
-        vis.run()
-        del vis
 
     # print('init voxel state:', time.time() - start_time)
     return voxel_coors, voxel_state, voxel_label, voxel_occ_count, voxel_free_count
