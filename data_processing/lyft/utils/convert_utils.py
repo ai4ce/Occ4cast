@@ -23,7 +23,7 @@ CAM_NAMES = [
     "CAM_BACK_RIGHT"
 ]
 
-def load_one_frame(sample_token, lyft_data):
+def load_one_frame(sample_token, lyft_data, lidar_names):
     points = {}
     labels = {}
     poses = {}
@@ -32,12 +32,11 @@ def load_one_frame(sample_token, lyft_data):
     sample = lyft_data.get('sample', sample_token)
 
     # Get all instances in the frame.
-    # instance_tokens = [lyft_data.get('sample_annotation', token) for token in sample['anns']]
     for token in sample['anns']:
         sample_annotation = lyft_data.get('sample_annotation', token)
         instance_token = sample_annotation['instance_token']
         instance_dict[instance_token] = {}
-        for lidar_name in LIDAR_NAMES:
+        for lidar_name in lidar_names:
             _, instance_box, _ = lyft_data.get_sample_data(
                 sample['data'][lidar_name],
                 box_vis_level=BoxVisibility.NONE,
@@ -52,7 +51,7 @@ def load_one_frame(sample_token, lyft_data):
         images[cam_name] = Image.open(cam_filepath)
 
     # Get the point cloud and sensor pose in the frame.
-    for lidar_sensor in LIDAR_NAMES:
+    for lidar_sensor in lidar_names:
         lidar_data = lyft_data.get('sample_data', sample['data'][lidar_sensor])
         ego_pose = lyft_data.get('ego_pose', lidar_data['ego_pose_token'])
         lidar_pose = lyft_data.get('calibrated_sensor', lidar_data['calibrated_sensor_token'])
@@ -81,7 +80,7 @@ def load_one_frame(sample_token, lyft_data):
     return points, poses, labels, images, instance_dict
 
 
-def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict, kwargs):
+def convert_one_frame(cur_index, pre, post, points, poses, labels, lidar_names, instance_dict, kwargs):
     pre = max(0, cur_index - pre)
     post = min(len(instance_dict), cur_index + post)
 
@@ -93,12 +92,12 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict
         if i != cur_index:
             for instance_token in instance_dict[i]:
                 if instance_token not in instance_dict[cur_index]:
-                    for lidar_name in LIDAR_NAMES:
+                    for lidar_name in lidar_names:
                         mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])
                         points[i][lidar_name] = np.delete(points[i][lidar_name], mask, axis=1)
                         labels[i][lidar_name] = np.delete(labels[i][lidar_name], mask)
                 else:
-                    for lidar_name in LIDAR_NAMES:
+                    for lidar_name in lidar_names:
                         mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])  
                         if not np.any(mask): continue
                         dst_box = np.copy(instance_dict[cur_index][instance_token]["LIDAR_TOP"].corners()).T
@@ -125,12 +124,12 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, instance_dict
                         labels[i][lidar_name][mask] = kwargs["class_map"][instance_name]
         else:
             for instance_token in instance_dict[i]:
-                for lidar_name in LIDAR_NAMES:
+                for lidar_name in lidar_names:
                     mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])
                     points[i][lidar_name] = points[i][lidar_name][:, ~mask]
                     labels[i][lidar_name] = labels[i][lidar_name][~mask]
 
-        for lidar_name in LIDAR_NAMES:
+        for lidar_name in lidar_names:
             points[i][lidar_name][:3] = np.dot(kwargs["kitti_to_lyft_lidar_inv"].rotation_matrix, points[i][lidar_name][:3])
             final_points["{}_{}".format(i, lidar_name)] = points[i][lidar_name]
             final_labels["{}_{}".format(i, lidar_name)] = labels[i][lidar_name]
@@ -154,6 +153,12 @@ def convert_one_scene(scene_index, lyft_data, kwargs, multiprocessing=False):
     sample_tokens = [scene["first_sample_token"]]
     while lyft_data.get('sample', sample_tokens[-1])['next']:
         sample_tokens.append(lyft_data.get('sample', sample_tokens[-1])['next'])
+
+    # Load lidar names because not all scenes have three lidars.
+    lidar_names = []
+    for lidar_name in LIDAR_NAMES:
+        if lidar_name in lyft_data.get("sample", sample_tokens[0])["data"]:
+            lidar_names.append(lidar_name)
 
     # Load camera calibration.
     cam_intrinsics = {}
@@ -186,7 +191,8 @@ def convert_one_scene(scene_index, lyft_data, kwargs, multiprocessing=False):
     for i, sample_token in enumerate(tqdm(sample_tokens)):
         frame_points, frame_poses, frame_labels, frame_images, frame_instances = load_one_frame(
             sample_token, 
-            lyft_data
+            lyft_data,
+            lidar_names
         )
         points.append(frame_points)
         poses.append(frame_poses)
@@ -208,7 +214,8 @@ def convert_one_scene(scene_index, lyft_data, kwargs, multiprocessing=False):
             kwargs["aggregate_post"], 
             copy.deepcopy(points), 
             copy.deepcopy(poses), 
-            copy.deepcopy(labels), 
+            copy.deepcopy(labels),
+            lidar_names,
             instance_tokens, 
             kwargs
         )
