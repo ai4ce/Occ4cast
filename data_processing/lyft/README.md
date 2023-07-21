@@ -1,3 +1,7 @@
+# Install dependencies
+1. Open `requirements.txt` and replace `XXX` with the cuda version on your system. For example, if your cuda version is `11.8`, then replace `cuXXX` with `cu118`.
+2. Run `pip install -r requirements.txt`
+
 # Run the code
 1. Setup parameters in `run_convert_lyft.sh` then run it by executing `./run_convert_lyft.sh`
 2. Setup parameters in `run_ray_model.sh` then run it by executing `./run_ray_model.sh`
