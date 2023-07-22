@@ -68,45 +68,43 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     final_input = []
     final_label = []
     final_invalid = []
+
+    rotation = Quaternion(axis=(0, 0, 1), angle=np.pi)
+    rotation_matrix = rotation.rotation_matrix
     
     # Read sensor pose
     pose_origin_inv = np.linalg.inv(np.load(pose_files[index])["{}_LIDAR_TOP".format(index)])
 
-    
     # Read and process inputs
-    rotation = Quaternion(axis=(0, 0, 1), angle=np.pi / 2)
-    rotation_matrix = rotation.transformation_matrix
-    # print(rotation_matrix)
-    # assert()
     i = index
     points = []
     origins = []
     point_dict = np.load(pcd_files[i])
     pose_dict = np.load(pose_files[i])
-    for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
-        point = point_dict["{}_{}".format(i, lidar_name)]
-        pose = pose_dict["{}_{}".format(i, lidar_name)]
-        origin = pose[:, 3]
+    lidar_name = "LIDAR_TOP"
 
-        point = rotation_matrix @ point
-        point = pose @ point
-        point = pose_origin_inv @ point
-        origin = pose_origin_inv @ origin
-        
-        point = point[:3].T
-        origin = origin[:3]
-        origin = np.broadcast_to(origin, (point.shape[0], 3))
-        
-        points.append(point)
-        origins.append(origin)
+    point = point_dict["{}_{}".format(i, lidar_name)]
+    pose = pose_dict["{}_{}".format(i, lidar_name)]
+    origin = pose[:, 3]
+
+    point = pose @ point
+    point = pose_origin_inv @ point
+    origin = pose_origin_inv @ origin
+    
+    point = point[:3].T
+    origin = origin[:3]
+    origin = np.broadcast_to(origin, (point.shape[0], 3))
+    
+    points.append(point)
+    origins.append(origin)
 
     # Aggregrate different lidar sensors
     points = np.concatenate(points, axis=0)
     origins = np.concatenate(origins, axis=0)
     pseudo_label = np.zeros(points.shape[0], dtype=np.uint8)
 
-    # points = points @ rotation_matrix.T
-    # origins = origins @ rotation_matrix.T
+    points = points @ rotation_matrix.T
+    origins = origins @ rotation_matrix.T
 
     # Convert to torch tensor
     points_dev = torch.from_numpy(points).to(_device)
@@ -130,35 +128,30 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     pose_dict = np.load(pose_files[i])
     label_dict = np.load(label_files[i])
     for j in range(start, end):
-        # for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
-        for lidar_name in ["LIDAR_TOP"]:
-            point = point_dict["{}_{}".format(j, lidar_name)]
-            pose = pose_dict["{}_{}".format(j, lidar_name)]
-            label = label_dict["{}_{}".format(j, lidar_name)]
-            
-            origin = pose[:, 3]
-            point = rotation_matrix @ point
-            point = pose @ point
-            point = pose_origin_inv @ point
-            origin = pose_origin_inv @ origin
-            
-            point = point[:3].T
-            origin = origin[:3]
-            origin = np.broadcast_to(origin, (point.shape[0], 3))
-            
-            points.append(point)
-            origins.append(origin)
-            labels.append(label)
+        point = point_dict["{}_{}".format(j, lidar_name)]
+        pose = pose_dict["{}_{}".format(j, lidar_name)]
+        label = label_dict["{}_{}".format(j, lidar_name)]
+        
+        origin = pose[:, 3]
+        point = pose @ point
+        point = pose_origin_inv @ point
+        origin = pose_origin_inv @ origin
+        
+        point = point[:3].T
+        origin = origin[:3]
+        origin = np.broadcast_to(origin, (point.shape[0], 3))
+        
+        points.append(point)
+        origins.append(origin)
+        labels.append(label)
 
     # Aggregrate different lidar sensors
     points = np.concatenate(points, axis=0)
     origins = np.concatenate(origins, axis=0)
     labels = np.concatenate(labels)
 
-    # rotation = Quaternion(axis=(0, 0, 1), angle=np.pi / 2)
-    # rotation_matrix = rotation.rotation_matrix
-    # points = points @ rotation_matrix.T
-    # origins = origins @ rotation_matrix.T
+    points = points @ rotation_matrix.T
+    origins = origins @ rotation_matrix.T
 
     # Convert to torch tensor
     points_dev = torch.from_numpy(points).to(_device)

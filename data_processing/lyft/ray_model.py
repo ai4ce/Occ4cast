@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import List, Tuple
 from glob import glob
 # import open3d as o3d
 
@@ -21,7 +20,6 @@ from tqdm import tqdm
 import argparse
 import torch
 from pyquaternion import Quaternion
-from scipy.spatial.transform import Rotation
 from utils.ray_traversal import *
 
 NOT_OBSERVED = -1
@@ -65,6 +63,7 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     voxel_size = [0.2, 0.2, 0.2]
     point_cloud_range = [-51.2, -25.6, -2, 51.2, 25.6, 4.4]
     spatial_shape = [512, 256, 32]
+    lidar_name = "LIDAR_TOP"
     final_input = []
     final_label = []
     final_invalid = []
@@ -72,36 +71,37 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     # Read sensor pose
     pose_origin_inv = np.linalg.inv(np.load(pose_files[index])["{}_LIDAR_TOP".format(index)])
 
-    
+    # Define lyft to kitti rotation matrix
+    rotation = Quaternion(axis=(0, 0, 1), angle=np.pi)
+    rotation_matrix = rotation.rotation_matrix
+
     # Read and process inputs
     for i in range(index-args.p_pre, index+1):
         points = []
         origins = []
         point_dict = np.load(pcd_files[i])
         pose_dict = np.load(pose_files[i])
-        for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
-            point = point_dict["{}_{}".format(i, lidar_name)]
-            pose = pose_dict["{}_{}".format(i, lidar_name)]
-            origin = pose[:, 3]
 
-            point = pose @ point
-            point = pose_origin_inv @ point
-            origin = pose_origin_inv @ origin
-            
-            point = point[:3].T
-            origin = origin[:3]
-            origin = np.broadcast_to(origin, (point.shape[0], 3))
-            
-            points.append(point)
-            origins.append(origin)
+        point = point_dict["{}_{}".format(i, lidar_name)]
+        pose = pose_dict["{}_{}".format(i, lidar_name)]
+        origin = pose[:, 3]
+
+        point = pose @ point
+        point = pose_origin_inv @ point
+        origin = pose_origin_inv @ origin
+        
+        point = point[:3].T
+        origin = origin[:3]
+        origin = np.broadcast_to(origin, (point.shape[0], 3))
+        
+        points.append(point)
+        origins.append(origin)
 
         # Aggregrate different lidar sensors
         points = np.concatenate(points, axis=0)
         origins = np.concatenate(origins, axis=0)
         pseudo_label = np.zeros(points.shape[0], dtype=np.uint8)
 
-        rotation = Quaternion(axis=(0, 0, 1), angle=np.pi / 2)
-        rotation_matrix = rotation.rotation_matrix
         points = points @ rotation_matrix.T
         origins = origins @ rotation_matrix.T
 
@@ -128,32 +128,28 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
         pose_dict = np.load(pose_files[i])
         label_dict = np.load(label_files[i])
         for j in range(start, end):
-            # print(j)
-            for lidar_name in ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]:
-                point = point_dict["{}_{}".format(j, lidar_name)]
-                pose = pose_dict["{}_{}".format(j, lidar_name)]
-                label = label_dict["{}_{}".format(j, lidar_name)]
-                
-                origin = pose[:, 3]
-                point = pose @ point
-                point = pose_origin_inv @ point
-                origin = pose_origin_inv @ origin
-                
-                point = point[:3].T
-                origin = origin[:3]
-                origin = np.broadcast_to(origin, (point.shape[0], 3))
-                
-                points.append(point)
-                origins.append(origin)
-                labels.append(label)
+            point = point_dict["{}_{}".format(j, lidar_name)]
+            pose = pose_dict["{}_{}".format(j, lidar_name)]
+            label = label_dict["{}_{}".format(j, lidar_name)]
+            
+            origin = pose[:, 3]
+            point = pose @ point
+            point = pose_origin_inv @ point
+            origin = pose_origin_inv @ origin
+            
+            point = point[:3].T
+            origin = origin[:3]
+            origin = np.broadcast_to(origin, (point.shape[0], 3))
+            
+            points.append(point)
+            origins.append(origin)
+            labels.append(label)
 
         # Aggregrate different lidar sensors
         points = np.concatenate(points, axis=0)
         origins = np.concatenate(origins, axis=0)
         labels = np.concatenate(labels)
 
-        rotation = Quaternion(axis=(0, 0, 1), angle=np.pi / 2)
-        rotation_matrix = rotation.rotation_matrix
         points = points @ rotation_matrix.T
         origins = origins @ rotation_matrix.T
 
