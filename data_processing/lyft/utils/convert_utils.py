@@ -13,7 +13,7 @@ from utils.ray_traversal import *
 from utils.geometry_utils import *
 
 
-LIDAR_NAMES = ["LIDAR_TOP", "LIDAR_FRONT_LEFT", "LIDAR_FRONT_RIGHT"]
+LIDAR_NAMES = ["LIDAR_TOP"]
 CAM_NAMES = [
     "CAM_FRONT", 
     "CAM_FRONT_LEFT", 
@@ -84,6 +84,12 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, lidar_names, 
     pre = max(0, cur_index - pre)
     post = min(len(instance_dict), cur_index + post)
 
+    ego_corners = np.array([
+        [4, 4, 4, 4, -4, -4, -4, -4],
+        [3, -3, -3, 3, 3, -3, -3, 3],
+        [0, 0, -2, -2, 0, 0, -2, -2]
+    ])
+
     final_points = {}
     final_labels = {}
     final_poses = {}
@@ -93,12 +99,12 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, lidar_names, 
             for instance_token in instance_dict[i]:
                 if instance_token not in instance_dict[cur_index]:
                     for lidar_name in lidar_names:
-                        mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])
+                        mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(1.1), points[i][lidar_name][:-1])
                         points[i][lidar_name] = np.delete(points[i][lidar_name], mask, axis=1)
                         labels[i][lidar_name] = np.delete(labels[i][lidar_name], mask)
                 else:
                     for lidar_name in lidar_names:
-                        mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])  
+                        mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(1.1), points[i][lidar_name][:-1])  
                         if not np.any(mask): continue
                         dst_box = np.copy(instance_dict[cur_index][instance_token]["LIDAR_TOP"].corners()).T
                         src_box = np.copy(instance_dict[i][instance_token][lidar_name].corners()).T
@@ -122,15 +128,13 @@ def convert_one_frame(cur_index, pre, post, points, poses, labels, lidar_names, 
 
                         instance_name = instance_dict[i][instance_token][lidar_name].name
                         labels[i][lidar_name][mask] = kwargs["class_map"][instance_name]
-        else:
-            for instance_token in instance_dict[i]:
-                for lidar_name in lidar_names:
-                    mask = points_in_box(instance_dict[i][instance_token][lidar_name].corners(), points[i][lidar_name][:-1])
-                    points[i][lidar_name] = points[i][lidar_name][:, ~mask]
-                    labels[i][lidar_name] = labels[i][lidar_name][~mask]
+
+        # Remove ego vehicle points.
+        ego_mask = points_in_box(ego_corners, points[i]["LIDAR_TOP"][:-1])
+        points[i]["LIDAR_TOP"] = np.delete(points[i]["LIDAR_TOP"], ego_mask, axis=1)
+        labels[i]["LIDAR_TOP"] = np.delete(labels[i]["LIDAR_TOP"], ego_mask)
 
         for lidar_name in lidar_names:
-            points[i][lidar_name][:3] = np.dot(kwargs["kitti_to_lyft_lidar_inv"].rotation_matrix, points[i][lidar_name][:3])
             final_points["{}_{}".format(i, lidar_name)] = points[i][lidar_name]
             final_labels["{}_{}".format(i, lidar_name)] = labels[i][lidar_name]
             final_poses["{}_{}".format(i, lidar_name)] = poses[i][lidar_name]
