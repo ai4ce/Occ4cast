@@ -128,21 +128,27 @@ def train(args):
         print(f"Epoch {epoch} train loss {train_loss / num_batch:.6f}")
 
         num_batch = len(val_loader)
-        val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0, "auc": 0}
+        val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0.5, "auc": 0}
         with torch.no_grad():
             model.eval()
-            for input, label, invalid in val_loader:
+            for input, label, invalid in tqdm(val_loader):
                 input = input.to(device)
                 label = label.to(device)
                 invalid = invalid.to(device)
+                label[label > 0] = 1
 
                 output = model(input, label, invalid)
                 output = torch.sigmoid(output)
 
-                precision, recall = torchmetrics.functional.precision_recall(output, label)
+                valid_mask = ~invalid
+                output = output[valid_mask]
+                label = label[valid_mask]
+                
+                precision = torchmetrics.functional.classification.binary_precision(output, label)
+                recall = torchmetrics.functional.classification.binary_recall(output, label)
                 f1 = 2 * precision * recall / (precision + recall)
                 iou = torchmetrics.functional.classification.binary_jaccard_index(output, label)
-                auc = torchmetrics.functional.binary_auroc(output, label)
+                auc = torchmetrics.functional.classification.binary_auroc(output, label)
 
                 val_metric["precision"] += precision.item()
                 val_metric["recall"] += recall.item()
@@ -150,24 +156,24 @@ def train(args):
                 val_metric["iou"] += iou.item()
                 val_metric["auc"] += auc.item()
             
-            for key in val_metric:
-                val_metric[key] /= num_batch
-            print(f"Epoch {epoch} val iou {val_metric['iou']:.6f} ")
+        for key in val_metric:
+            val_metric[key] /= num_batch
+        print(f"Epoch {epoch} val iou {val_metric['iou']:.6f} ")
 
-            if val_metric["iou"] > best_metric:
-                best_metric = val_metric["iou"]
-                ckpt_path = f"{ckpt_dir}/model_epoch_{epoch}.pth"
-                torch.save(
-                    {
-                        "epoch": epoch,
-                        "n_iter": n_iter,
-                        "model_state_dict": model.module.state_dict(),
-                        "optimizer_state_dict": optimizer.state_dict(),
-                        "scheduler_state_dict": scheduler.state_dict(),
-                    },
-                    ckpt_path,
-                )
-                print(f"Save model to {ckpt_path}")
+        if val_metric["iou"] > best_metric:
+            best_metric = val_metric["iou"]
+            ckpt_path = f"{ckpt_dir}/model_epoch_{epoch}.pth"
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "n_iter": n_iter,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "scheduler_state_dict": scheduler.state_dict(),
+                },
+                ckpt_path,
+            )
+            print(f"Save model to {ckpt_path}")
         scheduler.step()
 
 
