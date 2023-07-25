@@ -94,10 +94,11 @@ def train(args):
     )
 
     # dump config
-    save_dir = f"results/{args.dataset}"
+    save_dir = f"results/{args.dataset}_p{args.p_pre}{args.p_post}_lr{args.lr_start}_batch{args.batch_size}"
     mkdir_if_not_exists(save_dir)
     with open(f"{save_dir}/config.json", "w") as f:
         json.dump(args.__dict__, f, indent=4)
+    print(json.dumps(args.__dict__))
 
     # resume
     ckpt_dir = f"{save_dir}/ckpts"
