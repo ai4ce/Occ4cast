@@ -98,7 +98,7 @@ def train(args):
     mkdir_if_not_exists(save_dir)
     with open(f"{save_dir}/config.json", "w") as f:
         json.dump(args.__dict__, f, indent=4)
-    print(json.dumps(args.__dict__))
+    print(json.dumps(args.__dict__, indent=4))
 
     # resume
     ckpt_dir = f"{save_dir}/ckpts"
@@ -160,7 +160,8 @@ def train(args):
             
         for key in val_metric:
             val_metric[key] /= num_batch
-        print(f"Epoch {epoch} val iou {val_metric['iou']:.6f} ")
+        print(f"Epoch {epoch} val")
+        print(json.dumps(val_metric, indent=4))
 
         if val_metric["iou"] > best_metric:
             best_metric = val_metric["iou"]
