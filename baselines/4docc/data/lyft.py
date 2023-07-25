@@ -28,8 +28,8 @@ class LyftDataset(Dataset):
         else:
             raise ValueError('Invalid split name: {}'.format(split))
         
-        self.p_pre = p_pre
-        self.p_post = p_post
+        self.p_pre = p_pre + 1 # +1 for the current frame
+        self.p_post = p_post + 1
         self.semantic = semantic
         
         with open("configs/lyft.yaml", 'r') as f:
@@ -48,9 +48,9 @@ class LyftDataset(Dataset):
 
     def __getitem__(self, idx):
         data = np.load(self.data_path[idx])
-        input = data['input'][-(self.p_pre + 1):]
-        label = data['label'][self.p_post:]
-        invalid = data['invalid'][self.p_post:]
+        input = data['input'][-self.p_pre:]
+        label = data['label'][:self.p_post]
+        invalid = data['invalid'][:self.p_post]
         input_tensor = torch.tensor(input, dtype=torch.float16)
         label_tensor = torch.tensor(label)
         invalid_tensor = torch.from_numpy(invalid)
