@@ -219,7 +219,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Reproducibility
     np.random.seed(0)
-    torch.random.manual_seed(0)
+    torch.manual_seed(0)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
 
     train(args)
