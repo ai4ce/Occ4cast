@@ -47,10 +47,11 @@ class LyftDataset(Dataset):
         return len(self.data_path)
 
     def __getitem__(self, idx):
-        data = np.load(self.data_path[idx])
-        input = data['input'][-self.p_pre:]
-        label = data['label'][:self.p_post]
-        invalid = data['invalid'][:self.p_post]
+        with open(self.data_path[idx], 'rb') as f:
+            data = np.load(f)
+            input = data['input'][-self.p_pre:]
+            label = data['label'][:self.p_post]
+            invalid = data['invalid'][:self.p_post]
         input_tensor = torch.tensor(input, dtype=torch.float16)
         label_tensor = torch.tensor(label)
         invalid_tensor = torch.from_numpy(invalid)
