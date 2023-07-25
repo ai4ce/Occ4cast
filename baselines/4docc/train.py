@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 import torch
 import torchmetrics
+from torch.cuda.amp import autocast, GradScaler
 import numpy as np
 from torch.utils.data import DataLoader
 
@@ -43,7 +44,7 @@ def mkdir_if_not_exists(d):
         os.makedirs(d, exist_ok=True)
 
 
-def resume_from_ckpts(ckpt_dir, model, optimizer, scheduler):
+def resume_from_ckpts(ckpt_dir, model, optimizer, scheduler, scaler=None, amp=False):
     if len(os.listdir(ckpt_dir)) > 0:
         pattern = re.compile(r"model_epoch_(\d+).pth")
         epochs = []
@@ -59,6 +60,8 @@ def resume_from_ckpts(ckpt_dir, model, optimizer, scheduler):
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+        if amp:
+            scaler.load_state_dict(checkpoint["scaler_state_dict"])
 
         start_epoch = 1 + checkpoint["epoch"]
         n_iter = checkpoint["n_iter"]
@@ -93,8 +96,14 @@ def train(args):
         optimizer, step_size=args.lr_epoch, gamma=args.lr_decay
     )
 
+    # Scaler
+    if args.amp:
+        scaler = GradScaler()
+    else:
+        scaler = None
+
     # dump config
-    save_dir = f"results/{args.dataset}_p{args.p_pre}{args.p_post}_lr{args.lr_start}_batch{args.batch_size}"
+    save_dir = f"results/{args.dataset}_p{args.p_pre}{args.p_post}_lr{args.lr_start}_batch{args.batch_size}{'_amp' if args.amp else ''}"
     mkdir_if_not_exists(save_dir)
     with open(f"{save_dir}/config.json", "w") as f:
         json.dump(args.__dict__, f, indent=4)
@@ -103,7 +112,7 @@ def train(args):
     # resume
     ckpt_dir = f"{save_dir}/ckpts"
     mkdir_if_not_exists(ckpt_dir)
-    start_epoch, n_iter = resume_from_ckpts(ckpt_dir, model, optimizer, scheduler)
+    start_epoch, n_iter = resume_from_ckpts(ckpt_dir, model, optimizer, scheduler, scaler, args.amp)
 
     # train
     best_metric = 0
@@ -118,9 +127,15 @@ def train(args):
             invalid = invalid.to(device)
 
             optimizer.zero_grad()
-            loss = model(input, label, invalid)
-            loss.backward()
-            optimizer.step()
+            with autocast(enabled=args.amp):
+                loss = model(input, label, invalid)
+            if args.amp:
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss.backward()
+                optimizer.step()
 
             batch_loss = loss.item()
             train_loss += batch_loss
@@ -166,14 +181,17 @@ def train(args):
         if val_metric["iou"] > best_metric:
             best_metric = val_metric["iou"]
             ckpt_path = f"{ckpt_dir}/model_epoch_{epoch}.pth"
+            save_dict = {
+                "epoch": epoch,
+                "n_iter": n_iter,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "scheduler_state_dict": scheduler.state_dict(),
+            }
+            if args.amp:
+                save_dict["scaler_state_dict"] = scaler.state_dict()
             torch.save(
-                {
-                    "epoch": epoch,
-                    "n_iter": n_iter,
-                    "model_state_dict": model.state_dict(),
-                    "optimizer_state_dict": optimizer.state_dict(),
-                    "scheduler_state_dict": scheduler.state_dict(),
-                },
+                save_dict,
                 ckpt_path,
             )
             print(f"Save model to {ckpt_path}")
@@ -197,6 +215,7 @@ if __name__ == "__main__":
     model_group.add_argument("--num-epoch", type=int, default=15)
     model_group.add_argument("--batch-size", type=int, default=16)
     model_group.add_argument("--num-workers", type=int, default=4)
+    model_group.add_argument("--amp", action="store_true")
 
     args = parser.parse_args()
 

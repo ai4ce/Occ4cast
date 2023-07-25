@@ -52,7 +52,7 @@ class LyftDataset(Dataset):
             input = data['input'][-self.p_pre:]
             label = data['label'][:self.p_post]
             invalid = data['invalid'][:self.p_post]
-        input_tensor = torch.tensor(input, dtype=torch.float16)
+        input_tensor = torch.tensor(input, dtype=torch.float32)
         label_tensor = torch.tensor(label)
         invalid_tensor = torch.from_numpy(invalid)
         return input_tensor, label_tensor, invalid_tensor

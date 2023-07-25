@@ -151,28 +151,27 @@ class OccupancyForecastingNetwork(nn.Module):
             _in_channels, _out_channels, (3, 3), stride=1, padding=1, bias=True
         )
         self.decoder = Decoder(self.encoder.out_channels, _out_channels)
-        self.criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(occ_fc / free_fc))
+        self.criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(free_fc / occ_fc))
 
-    @autocast()
     def forward(self, input_occ=None, gt_occ=None, invalid_mask=None):
         # double check
         N, T_in, L, W, H = input_occ.shape
         assert T_in == self.p_pre and H == self.n_height
 
         # transpose axis
-        input_occ = torch.transpose(input_occ, 2, 4).contiguous()
-        _input = input_occ.reshape(N, -1, W, L)
+        input_occ = torch.movedim(input_occ, 4, 2).contiguous()
+        _input = input_occ.reshape(N, -1, L, W)
 
         # w/ skip connection
         _output = self.linear(_input) + self.decoder(self.encoder(_input))
-        output = _output.reshape(N, -1, H, W, L)
-        output = torch.transpose(output, 2, 4)
+        output = _output.reshape(N, -1, H, L, W)
+        output = torch.movedim(output, 2, 4)
 
         if self.training:
             valid_output = output[~invalid_mask]
             gt_occ[gt_occ > 0] = 1
             valid_gt = gt_occ[~invalid_mask]
-            loss = self.criterion(valid_output, valid_gt.to(torch.float16))
+            loss = self.criterion(valid_output, valid_gt.to(torch.float32))
             return loss
         else:
             return output
