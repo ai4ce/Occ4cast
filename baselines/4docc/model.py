@@ -170,8 +170,9 @@ class OccupancyForecastingNetwork(nn.Module):
 
         if self.training:
             valid_output = output[~invalid_mask]
+            gt_occ[gt_occ > 0] = 1
             valid_gt = gt_occ[~invalid_mask]
-            loss = self.criterion(valid_output, valid_gt)
+            loss = self.criterion(valid_output, valid_gt.to(torch.float16))
             return loss
         else:
             return output
