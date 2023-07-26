@@ -136,7 +136,7 @@ class Decoder(nn.Module):
 
 
 class OccupancyForecastingNetwork(nn.Module):
-    def __init__(self, p_pre, p_post, n_height, free_fc, occ_fc):
+    def __init__(self, p_pre, p_post, n_height, free_fc=1, occ_fc=1):
         super(OccupancyForecastingNetwork, self).__init__()
 
         self.p_pre = p_pre

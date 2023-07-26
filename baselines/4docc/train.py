@@ -149,7 +149,6 @@ def train(args):
             model.eval()
             for input, label, invalid in tqdm(val_loader):
                 input = input.to(device)
-                label = label.int()
                 label = label.to(device)
                 invalid = invalid.to(device)
                 label[label > 0] = 1
