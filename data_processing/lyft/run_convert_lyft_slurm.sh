@@ -1,6 +1,8 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --array=0-59
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=12
+#SBATCH --array=0-89
 #SBATCH --time=4:00:00
 #SBATCH --mem=12GB
 #SBATCH --job-name=lyft
@@ -40,4 +42,4 @@ singularity exec \
         --overlay /scratch/$USER/dataset/lyft/lyft.sqf:ro \
 	    /scratch/work/public/singularity/cuda11.8.86-cudnn8.7-devel-ubuntu22.04.2.sif \
 	    /bin/bash -c "source /ext3/env.sh; 
-        python convert_lyft.py -m -d $DATA_PATH -o $OUTPUT_PATH -s $START -b ${SLURM_ARRAY_TASK_ID} --a_pre $A_PRE --a_post $A_POST --p_pre $P_PRE --p_post $P_POST"
+        python convert_lyft_batch.py -d $DATA_PATH -o $OUTPUT_PATH -s $START -b ${SLURM_ARRAY_TASK_ID} --a_pre $A_PRE --a_post $A_POST --p_pre $P_PRE --p_post $P_POST"
