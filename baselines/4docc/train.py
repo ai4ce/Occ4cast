@@ -144,7 +144,7 @@ def train(args):
         print(f"Epoch {epoch} train loss {train_loss / num_batch:.6f}")
 
         num_batch = len(val_loader)
-        val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0.5, "auc": 0}
+        val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0, "auc": 0}
         with torch.no_grad():
             model.eval()
             for input, label, invalid in tqdm(val_loader):
