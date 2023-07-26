@@ -1,6 +1,7 @@
-# slurm log
+# log
 *.out
 *.err
+baselines/4docc/results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
