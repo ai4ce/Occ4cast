@@ -131,4 +131,4 @@ class ConvLSTM(nn.Module):
             loss = self.criterion(valid_output, valid_gt.to(torch.float32))
             return loss
         else:
-            return out_feature
+            return output
