@@ -94,7 +94,7 @@ def eval(args):
 
     # evaluation
     num_batch = len(eval_loader)
-    val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0, "soft_iou": 0, "auc": 0}
+    val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0, "soft_iou": 0, "ap": 0}
     ious = {i: 0 for i in range(config.p_post+1)}
     soft_ious = {i: 0 for i in range(config.p_post+1)}
     with torch.no_grad():
@@ -117,14 +117,14 @@ def eval(args):
             f1 = 2 * precision * recall / (precision + recall)
             iou = torchmetrics.functional.classification.binary_jaccard_index(output_all, label_all)
             soft_iou = binary_soft_iou(output_all, label_all)
-            auc = torchmetrics.functional.classification.binary_auroc(output_all, label_all)
+            ap = torchmetrics.functional.classification.binary_average_precision(output_all, label_all)
 
             val_metric["precision"] += precision.item()
             val_metric["recall"] += recall.item()
             val_metric["f1"] += f1.item()
             val_metric["iou"] += iou.item()
             val_metric["soft_iou"] += soft_iou.item()
-            val_metric["auc"] += auc.item()
+            val_metric["ap"] += ap.item()
 
             for i in range(config.p_post+1):
                 output_frame = output[:, i]
