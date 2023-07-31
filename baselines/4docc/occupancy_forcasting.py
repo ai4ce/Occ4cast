@@ -136,7 +136,7 @@ class Decoder(nn.Module):
 
 
 class OccupancyForecastingNetwork(nn.Module):
-    def __init__(self, p_pre, p_post, n_height, free_fc=1, occ_fc=1):
+    def __init__(self, p_pre, p_post, n_height):
         super(OccupancyForecastingNetwork, self).__init__()
 
         self.p_pre = p_pre
@@ -151,7 +151,7 @@ class OccupancyForecastingNetwork(nn.Module):
             _in_channels, _out_channels, (3, 3), stride=1, padding=1, bias=True
         )
         self.decoder = Decoder(self.encoder.out_channels, _out_channels)
-        self.criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(free_fc / occ_fc))
+        self.criterion = nn.BCEWithLogitsLoss()
 
     def forward(self, input_occ=None, gt_occ=None, invalid_mask=None):
         # double check
