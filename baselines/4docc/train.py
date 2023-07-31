@@ -10,7 +10,8 @@ from torch.cuda.amp import autocast, GradScaler
 import numpy as np
 from torch.utils.data import DataLoader
 
-from model import OccupancyForecastingNetwork
+from occupancy_forcasting import OccupancyForecastingNetwork
+from conv_lstm import ConvLSTM
 
 
 def make_data_loaders(args):
@@ -79,13 +80,17 @@ def train(args):
     train_loader, val_loader, voxel_size, class_fc = make_data_loaders(args)
 
     # model
-    model = OccupancyForecastingNetwork(
-        args.p_pre+1,
-        args.p_post+1,
-        voxel_size[-2],
-        class_fc[0],
-        class_fc[1],
-    )
+    if args.model.lower() == "occ":
+        model = OccupancyForecastingNetwork(
+            args.p_pre+1,
+            args.p_post+1,
+            voxel_size[-2]
+        )
+    elif args.model.lower() == "convlstm":
+        model = ConvLSTM(args.p_pre+1, args.p_post+1, voxel_size[-2])
+    else:
+        raise NotImplementedError(f"Model {args.model} is not supported.")
+    
     model = model.to(device)
 
     # optimizer
@@ -103,7 +108,7 @@ def train(args):
         scaler = None
 
     # dump config
-    save_dir = f"results/{args.dataset}_p{args.p_pre}{args.p_post}_lr{args.lr_start}_batch{args.batch_size}{'_amp' if args.amp else ''}"
+    save_dir = f"results/{args.model}_{args.dataset}_p{args.p_pre}{args.p_post}_lr{args.lr_start}_batch{args.batch_size}{'_amp' if args.amp else ''}"
     mkdir_if_not_exists(save_dir)
     with open(f"{save_dir}/config.json", "w") as f:
         json.dump(args.__dict__, f, indent=4)
@@ -207,6 +212,7 @@ if __name__ == "__main__":
     data_group.add_argument("--p_post", type=int, default=10)
 
     model_group = parser.add_argument_group("model")
+    model_group.add_argument('-m', "--model", type=str, default="occ")
     model_group.add_argument("--optimizer", type=str, default="Adam")  # Adam with 5e-4
     model_group.add_argument("--lr-start", type=float, default=5e-4)
     model_group.add_argument("--lr-epoch", type=float, default=5)
