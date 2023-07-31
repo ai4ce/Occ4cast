@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 
 from occupancy_forcasting import OccupancyForecastingNetwork
 from conv_lstm import ConvLSTM
+from conv3d import Conv3DForecasting
 
 
 def make_data_loaders(args):
@@ -88,6 +89,8 @@ def train(args):
         )
     elif args.model.lower() == "convlstm":
         model = ConvLSTM(args.p_pre+1, args.p_post+1, voxel_size[-2])
+    elif args.model.lower() == "conv3d":
+        model = Conv3DForecasting(args.p_pre+1, args.p_post+1)
     else:
         raise NotImplementedError(f"Model {args.model} is not supported.")
     
