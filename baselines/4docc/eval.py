@@ -7,11 +7,11 @@ from tqdm import tqdm
 
 import torch
 import torchmetrics
-from torch.cuda.amp import autocast, GradScaler
 import numpy as np
 from torch.utils.data import DataLoader
 
-from model import OccupancyForecastingNetwork
+from occupancy_forcasting import OccupancyForecastingNetwork
+from conv_lstm import ConvLSTM
 
 
 def make_data_loaders(args, dataroot):
@@ -52,7 +52,13 @@ def load_ckpts(ckpt_dir, model):
         print(f"Load from checkpoint {ckpt_path}")
 
         checkpoint = torch.load(ckpt_path)
-        model.load_state_dict(checkpoint["model_state_dict"])
+        model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+
+
+def binary_soft_iou(output, label):
+    inter = torch.sum(output * label)
+    union = torch.sum(output + label - output * label)
+    return inter / union
 
 
 def eval(args):
@@ -70,11 +76,16 @@ def eval(args):
     eval_loader, voxel_size = make_data_loaders(config, args.dataroot)
 
     # model
-    model = OccupancyForecastingNetwork(
-        config.p_pre+1,
-        config.p_post+1,
-        voxel_size[-2],
-    )
+    if config.model.lower() == "occ":
+        model = OccupancyForecastingNetwork(
+            config.p_pre+1,
+            config.p_post+1,
+            voxel_size[-2],
+        )
+    elif config.model.lower() == "convlstm":
+        model = ConvLSTM(config.p_pre+1, config.p_post+1, voxel_size[-2])
+    else:
+        raise NotImplementedError(f"Model {config.model} is not supported.")
     model = model.to(device)
 
     # resume
@@ -83,8 +94,9 @@ def eval(args):
 
     # evaluation
     num_batch = len(eval_loader)
-    val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0, "auc": 0}
+    val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0, "soft_iou": 0, "auc": 0}
     ious = {i: 0 for i in range(config.p_post+1)}
+    soft_ious = {i: 0 for i in range(config.p_post+1)}
     with torch.no_grad():
         model.eval()
         for input, label, invalid in tqdm(eval_loader):
@@ -104,12 +116,14 @@ def eval(args):
             recall = torchmetrics.functional.classification.binary_recall(output_all, label_all)
             f1 = 2 * precision * recall / (precision + recall)
             iou = torchmetrics.functional.classification.binary_jaccard_index(output_all, label_all)
+            soft_iou = binary_soft_iou(output_all, label_all)
             auc = torchmetrics.functional.classification.binary_auroc(output_all, label_all)
 
             val_metric["precision"] += precision.item()
             val_metric["recall"] += recall.item()
             val_metric["f1"] += f1.item()
             val_metric["iou"] += iou.item()
+            val_metric["soft_iou"] += soft_iou.item()
             val_metric["auc"] += auc.item()
 
             for i in range(config.p_post+1):
@@ -122,13 +136,17 @@ def eval(args):
                     output_frame, 
                     label_frame
                 ).item()
+                soft_ious[i] += binary_soft_iou(output_frame, label_frame).item()
         
     for key in val_metric:
         val_metric[key] /= num_batch
     for key in ious:
         ious[key] /= num_batch
+    for key in soft_ious:
+        soft_ious[key] /= num_batch
     print("metrics:", json.dumps(val_metric, indent=4), end="\n")
     print("IoUs:", json.dumps(ious, indent=4))
+    print("soft IoUs:", json.dumps(soft_ious, indent=4))
 
     with open(f"{load_dir}/metrics.json", "w") as f:
         json.dump(val_metric, f, indent=4)
