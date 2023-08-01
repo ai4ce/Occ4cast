@@ -176,7 +176,6 @@ class Conv3DForecasting(nn.Module):
             valid_gt = gt_occ[~invalid_mask]
             bce_loss = self.bce(valid_output, valid_gt.to(torch.float32))
             soft_iou_loss = self.soft_iou(valid_output, valid_gt)
-            print(bce_loss.item(), soft_iou_loss.item())
             return 0.5 * bce_loss + 0.5 * soft_iou_loss
         else:
             return output
