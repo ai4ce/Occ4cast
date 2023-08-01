@@ -85,7 +85,7 @@ def eval(args):
         )
     elif config.model.lower() == "convlstm":
         model = ConvLSTM(config.p_pre+1, config.p_post+1, voxel_size[-2])
-    elif args.model.lower() == "conv3d":
+    elif config.model.lower() == "conv3d":
         model = Conv3DForecasting(config.p_pre+1, config.p_post+1)
     else:
         raise NotImplementedError(f"Model {config.model} is not supported.")
