@@ -34,6 +34,19 @@ def bn(num_features):
     return nn.BatchNorm3d(num_features=num_features)
 
 
+class SoftIoUWithSigmoidLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, pred, target):
+        pred = torch.sigmoid(pred)
+        inter = (pred * target).sum()
+        union = (pred + target - pred * target).sum()
+        iou = inter / union
+        loss = 1 - iou
+        return loss.mean()
+
+
 class ConvBlock(nn.Module):
     def __init__(self, num_layer, in_channels, out_channels, max_pool=False):
         super(ConvBlock, self).__init__()
@@ -150,7 +163,8 @@ class Conv3DForecasting(nn.Module):
             _in_channels, _out_channels, 3, stride=1, padding=1, bias=True
         )
         self.decoder = Decoder(self.encoder.out_channels, _out_channels)
-        self.criterion = nn.BCEWithLogitsLoss()
+        self.bce = nn.BCEWithLogitsLoss()
+        self.soft_iou = SoftIoUWithSigmoidLoss()
 
     def forward(self, input_occ=None, gt_occ=None, invalid_mask=None):
         # w/ skip connection
@@ -160,7 +174,9 @@ class Conv3DForecasting(nn.Module):
             valid_output = output[~invalid_mask]
             gt_occ[gt_occ > 0] = 1
             valid_gt = gt_occ[~invalid_mask]
-            loss = self.criterion(valid_output, valid_gt.to(torch.float32))
-            return loss
+            bce_loss = self.bce(valid_output, valid_gt.to(torch.float32))
+            soft_iou_loss = self.soft_iou(valid_output, valid_gt)
+            print(bce_loss.item(), soft_iou_loss.item())
+            return 0.5 * bce_loss + 0.5 * soft_iou_loss
         else:
             return output
