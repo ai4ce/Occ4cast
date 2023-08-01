@@ -152,7 +152,7 @@ def train(args):
         print(f"Epoch {epoch} train loss {train_loss / num_batch:.6f}")
 
         num_batch = len(val_loader)
-        val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0, "auc": 0}
+        val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0, "ap": 0}
         with torch.no_grad():
             model.eval()
             for input, label, invalid in tqdm(val_loader):
@@ -172,13 +172,13 @@ def train(args):
                 recall = torchmetrics.functional.classification.binary_recall(output, label)
                 f1 = 2 * precision * recall / (precision + recall)
                 iou = torchmetrics.functional.classification.binary_jaccard_index(output, label)
-                auc = torchmetrics.functional.classification.binary_auroc(output, label)
+                ap = torchmetrics.functional.classification.binary_average_precision(output, label)
 
                 val_metric["precision"] += precision.item()
                 val_metric["recall"] += recall.item()
                 val_metric["f1"] += f1.item()
                 val_metric["iou"] += iou.item()
-                val_metric["auc"] += auc.item()
+                val_metric["ap"] += ap.item()
             
         for key in val_metric:
             val_metric[key] /= num_batch
