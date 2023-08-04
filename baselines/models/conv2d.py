@@ -135,9 +135,9 @@ class Decoder(nn.Module):
         return self.block(x)
 
 
-class OccupancyForecastingNetwork(nn.Module):
+class Conv2DForecasting(nn.Module):
     def __init__(self, p_pre, p_post, n_height):
-        super(OccupancyForecastingNetwork, self).__init__()
+        super(Conv2DForecasting, self).__init__()
 
         self.p_pre = p_pre
         self.p_post = p_post

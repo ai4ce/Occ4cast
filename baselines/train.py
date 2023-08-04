@@ -10,10 +10,7 @@ from torch.cuda.amp import autocast, GradScaler
 import numpy as np
 from torch.utils.data import DataLoader
 
-from occupancy_forcasting import OccupancyForecastingNetwork
-from conv_lstm import ConvLSTM
-from conv3d import Conv3DForecasting
-
+from models import Conv2DForecasting, Conv3DForecasting, ConvLSTM
 
 def make_data_loaders(args):
     if args.dataset.lower() == "lyft":
@@ -82,11 +79,7 @@ def train(args):
 
     # model
     if args.model.lower() == "occ":
-        model = OccupancyForecastingNetwork(
-            args.p_pre+1,
-            args.p_post+1,
-            voxel_size[-2]
-        )
+        model = Conv2DForecasting(args.p_pre+1, args.p_post+1, voxel_size[-2])
     elif args.model.lower() == "convlstm":
         model = ConvLSTM(args.p_pre+1, args.p_post+1, voxel_size[-2])
     elif args.model.lower() == "conv3d":
