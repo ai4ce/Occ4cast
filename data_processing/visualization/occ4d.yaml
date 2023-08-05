@@ -1,0 +1,62 @@
+# This file is covered by the LICENSE file in the root of this project.
+labels: 
+  0: "free"
+  1: "unlabeled"
+  2: "animal"
+  3: "bicycle"
+  4: "bus"
+  5: "car"
+  6: "emergency_vehicle"
+  7: "motorcycle"
+  8: "other_vehicle"
+  9: "pedestrain"
+  10: "truck"
+color_map: # bgr
+  0: [0, 0, 0]
+  1: [200, 200, 200]
+  2: [30, 30, 255]
+  3: [245, 230, 100]
+  4: [245, 150, 100]
+  5: [245, 150, 100]
+  6: [245, 150, 100]
+  7: [150, 60, 30]
+  8: [245, 150, 100]
+  9: [30, 30, 255]
+  10: [245, 150, 100]
+
+learning_map:
+  0: 0      # "unlabeled", and others ignored
+  1: 1
+  2: 2
+  3: 3
+  4: 4
+  5: 5
+  6: 6
+  7: 7
+  8: 8
+  9: 9
+  10: 10
+learning_map_inv: # inverse of previous map
+  0: 0      # "unlabeled", and others ignored
+  1: 1
+  2: 2
+  3: 3
+  4: 4
+  5: 5
+  6: 6
+  7: 7
+  8: 8
+  9: 9
+  10: 10
+learning_ignore: # Ignore classes
+  0: True      # "unlabeled", and others ignored
+  1: False     # "car"
+  2: False     # "bicycle"
+  3: False     # "motorcycle"
+  4: False     # "truck"
+  5: False     # "other-vehicle"
+  6: False     # "person"
+  7: False     # "bicyclist"
+  8: False     # "motorcyclist"
+  9: False     # "road"
+  10: False    # "parking"
