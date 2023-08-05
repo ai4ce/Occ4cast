@@ -10,40 +10,38 @@
 The data format after processing should be as follows:
 ```
 dataset/lyft/
-├── train
+├── calib
+|   ├── 0000 # scene index
+|   |   ├── cam_extrinsics.npz
+|   |   ├── cam_intrinsics.npz
+|   ├── ...
 
-|   ├── calib
-|   |   ├── 0000 # scene index
-|   |   |   ├── cam_extrinsics.npz
-|   |   |   ├── cam_intrinsics.npz
+├── image 
+|   ├── 0000 # scene index
+|   |   ├── 0000_CAM_FRONT.jpg
+|   |   ├── 0000_CAM_FRONT_LEFT.jpg
 |   |   ├── ...
-
-|   ├── image 
-|   |   ├── 0000 # scene index
-|   |   |   ├── 0000_CAM_FRONT.jpg
-|   |   |   ├── 0000_CAM_FRONT_LEFT.jpg
-|   |   |   ├── ...
-|   |   |   ├── 0001_CAM_FRONT.jpg
-|   |   |   ├── ...
+|   |   ├── 0001_CAM_FRONT.jpg
 |   |   ├── ...
+|   ├── ...
 
-|   ├── point_cloud
-|   |   ├── 0000 # scene index
-|   |   |   ├── 0000_point.npz
-|   |   |   ├── 0000_label.npz
-|   |   |   ├── 0000_pose.npz
-|   |   |   ├── 0001_point.npz
-|   |   |   ├── ...
+├── point_cloud
+|   ├── 0000 # scene index
+|   |   ├── 0000_point.npz
+|   |   ├── 0000_label.npz
+|   |   ├── 0000_pose.npz
+|   |   ├── 0001_point.npz
 |   |   ├── ...
+|   ├── ...
 
-|   ├── voxel
-|   |   ├── 0000 # scene index
-|   |   |   ├── 0010.npz # Start from 10th frame
-|   |   |   ├── 0011.npz
-|   |   |   ├── ...
+├── voxel
+|   ├── 0000 # scene index
+|   |   ├── 0010.npz # Start from 10th frame
+|   |   ├── 0011.npz
 |   |   ├── ...
+|   ├── ...
 
-|   ├── vis # Optional
+├── vis # Optional
 ```
 
 # `.npz` file structure
