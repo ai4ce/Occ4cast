@@ -490,7 +490,8 @@ def process_one_log(log_id,args):
 if __name__ == "__main__":
     # Parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_dir", type=str, help="path to where the logs live")
+    parser.add_argument("--dataset_dir", type=str,default='/home/yiming/guofeng/openssc/dataset/Argo/train4', help="path to where the logs live")
+    parser.add_argument('-o', '--output_path', type=str, default='/home/yiming/guofeng/openssc/argoverse-api/transform/output/train4', help='path to the output')
     parser.add_argument(
         "--experiment_prefix",
         default="argoverse_bev_viz",
@@ -505,11 +506,9 @@ if __name__ == "__main__":
     )
     parser.add_argument('--a_pre', type=int, default=70, help='number of frames to aggregrate before the current frame')
     parser.add_argument('--a_post', type=int, default=70, help='number of frames to aggregrate after the current frame')
-    parser.add_argument('-o', '--output_path', type=str, default='/home/yiming/guofeng/openssc/argoverse-api/transform/output/train4', help='path to the output')
 
     args = parser.parse_args()
     logger.info(args)
-    args.dataset_dir = '/home/yiming/guofeng/openssc/dataset/Argo/train4'
     folders = glob.glob(args.dataset_dir+ '/*/')
     log_ids = [folder.split('/')[-2] for folder in folders]
 
