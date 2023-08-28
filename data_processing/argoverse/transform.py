@@ -25,7 +25,7 @@ from PIL import Image
 import tqdm
 import numpy as np
 from multiprocessing import Pool
-
+from tqdm import tqdm
 LIDAR_NAMES = ["LIDAR_TOP"]
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -409,7 +409,7 @@ class DatasetTransformer:
 
 
                 # Convert all frames in the scene.
-                for k in range(len(seq_dict)):
+                for k in tqdm(range(len(seq_dict))):
                     # if 0 <= k < 50 :
                     if not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_point.npz".format(k))) and  not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_pose.npz".format(k))) and not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_label.npz".format(k))):
                         final_points, final_poses, final_labels = self.convert_one_frame(k,pre,post,copy.deepcopy(seq_dict))
