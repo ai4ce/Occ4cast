@@ -62,9 +62,9 @@ CAM_FRONT: 3x3 matrix
 ```
 - `*_point.npz`: 
 ```
-i_LIDAR_TOP: Nx3 matrix
-i_LIDAR_FRONT_LEFT: Nx3 matrix
-i_LIDAR_FRONT_RIGHT: Nx3 matrix
+i_LIDAR_TOP: 4xN matrix
+i_LIDAR_FRONT_LEFT: 4xN matrix
+i_LIDAR_FRONT_RIGHT: 4xN matrix
 ```
 Note: `i` starts from `*-10` and ends at `*+10` for each scene, i.e. when `*=10`, `i` takes values from `[0, 1, ..., 20]`
 - `*_label.npz`: 
