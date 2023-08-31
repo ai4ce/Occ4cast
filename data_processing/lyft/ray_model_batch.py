@@ -41,7 +41,7 @@ parser.add_argument('--p_pre', type=int, default=10, help='number of frames to i
 parser.add_argument('--p_post', type=int, default=10, help='number of frames to input after the current frame')
 parser.add_argument('-i', '--input', type=str, default='/home/xl3136/lyft_kitti/train')
 parser.add_argument('-v', '--vis', action='store_true')
-# parser.add_argument('--input', type=str, default='/home/xl3136/nusc_kitti/mini_train_71')
+parser.add_argument('-t', '--data_type', type=str, default='lyft')
 args = parser.parse_args()
 
 
@@ -72,7 +72,12 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     pose_origin_inv = np.linalg.inv(np.load(pose_files[index])["{}_LIDAR_TOP".format(index)])
 
     # Define lyft to kitti rotation matrix
-    rotation = Quaternion(axis=(0, 0, 1), angle=np.pi)
+    if args.data_type == 'lyft':
+        rotation = Quaternion(axis=(0, 0, 1), angle=np.pi)
+    elif args.data_type == 'argoverse':
+        rotation = Quaternion(axis=(0, 0, 1), angle=0)
+    else:
+        raise NotImplementedError
     rotation_matrix = rotation.rotation_matrix
 
     # Read and process inputs
