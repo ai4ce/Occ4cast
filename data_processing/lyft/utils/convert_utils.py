@@ -9,7 +9,7 @@ from lyft_dataset_sdk.lyftdataset import LyftDataset
 from lyft_dataset_sdk.utils.data_classes import LidarPointCloud, Box
 from lyft_dataset_sdk.utils.geometry_utils import BoxVisibility, transform_matrix, view_points
 from pyquaternion import Quaternion
-from utils.ray_traversal import *
+from data_processing.raymodel.utils.ray_traversal import *
 from utils.geometry_utils import *
 
 
