@@ -15,6 +15,7 @@ from argoverse.data_loading.simple_track_dataloader import SimpleArgoverseTracki
 from argoverse.data_loading.object_label_record import json_label_dict_to_obj_record
 from argoverse.data_loading.pose_loader import get_city_SE3_egovehicle_at_sensor_t
 import os
+import shutil
 import numpy as np
 import sys
 from argoverse.utils.camera_stats import RING_CAMERA_LIST
@@ -248,6 +249,9 @@ class DatasetTransformer:
                 logger.info(f"Log: {log_id}")
 
                 ply_fpaths = sorted(glob.glob(f"{self.dataset_dir}/{log_id}/lidar/PC_*.ply"))
+                img_dir = f"{self.output_dir}/image/{log_id}/"
+                if not os.path.exists(img_dir):
+                    os.makedirs(img_dir)
 
                 seq_dict = OrderedDict()
                 # then iterate over the time axis
@@ -288,16 +292,6 @@ class DatasetTransformer:
                     city_pts = city_SE3_egovehicle.transform_point_cloud(ego_pts)
 
                     vehicle2global = city_SE3_egovehicle.transform_matrix
-
-                    test0 = np.hstack((ego_pts, np.ones((ego_pts.shape[0], 1)))) @ np.linalg.inv(vehicle2global).T[:,:3]
-                    test = np.hstack((ego_pts, np.ones((ego_pts.shape[0], 1)))) @ vehicle2global.T[:,:3]
-                    test2 = np.hstack((ego_pts, np.ones((ego_pts.shape[0], 1)))) @ vehicle2global.T @ np.linalg.inv(vehicle2global).T[:,:3]
-                    test3 = np.linalg.inv(vehicle2global) @ np.vstack((ego_pts.T, np.ones((1, ego_pts.T.shape[1]))))
-                    test4 = vehicle2global @ np.vstack((ego_pts.T, np.ones((1, ego_pts.T.shape[1]))))
-                    test5 = vehicle2global@ np.linalg.inv(vehicle2global)@ np.vstack((ego_pts.T, np.ones((1, ego_pts.T.shape[1]))))
-                    
-                    test_origin = vehicle2global[:, 3]
-
 
                     bboxes =[]
                     bbox_labels=[]
@@ -347,6 +341,7 @@ class DatasetTransformer:
                             copy.deepcopy(points_all_city), city_name, return_logicals=True)
                     grd_points= points_all[np.logical_not(not_ground_logicals)]
                     grd_height=grd_points[2].mean()
+                    points_all = np.hstack((points_all, np.ones((points_all.shape[0], 1))))
                     
 
                     seq_dict[frame_index] = {
@@ -395,7 +390,10 @@ class DatasetTransformer:
                         cam_extrinsics[cam_name] = extrinsics
 
                         img_path = f"{self.dl.data_dir}/{log_id}/{cam_name}/{cam_name}_{cam_timestamp}.jpg"
-                        # img = Image.open(img_path)
+                        save_file_name = "{:04d}_{}.jpg".format(i, cam_name)
+                        img_save_path = os.path.join(self.output_dir, "image", str(log_id), save_file_name)
+                        shutil.copy(img_path, img_save_path)
+
 
                     if last_timestamp ==0:
                         last_timestamp = lidar_timestamp
@@ -411,21 +409,21 @@ class DatasetTransformer:
                 # Convert all frames in the scene.
                 for k in tqdm(range(len(seq_dict))):
                     # if 0 <= k < 50 :
-                    if not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_point.npz".format(k))) and  not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_pose.npz".format(k))) and not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_label.npz".format(k))):
-                        final_points, final_poses, final_labels = self.convert_one_frame(k,pre,post,copy.deepcopy(seq_dict))
-                        save_path_pcd = os.path.join(self.output_dir, "point_cloud",str(log_id))
-                        if not os.path.exists(save_path_pcd):
-                            os.makedirs(save_path_pcd)
-                        points_path = os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_point".format(k))
-                        poses_path = os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_pose".format(k))
-                        labels_path = os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_label".format(k))
+                    # if not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_point.npz".format(k))) and  not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_pose.npz".format(k))) and not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_label.npz".format(k))):
+                    final_points, final_poses, final_labels = self.convert_one_frame(k,pre,post,copy.deepcopy(seq_dict))
+                    save_path_pcd = os.path.join(self.output_dir, "point_cloud",str(log_id))
+                    if not os.path.exists(save_path_pcd):
+                        os.makedirs(save_path_pcd)
+                    points_path = os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_point".format(k))
+                    poses_path = os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_pose".format(k))
+                    labels_path = os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_label".format(k))
 
-                        np.savez_compressed(points_path, **final_points)
-                        np.savez_compressed(poses_path, **final_poses)
-                        np.savez_compressed(labels_path, **final_labels)
-                        print(f'logid:{log_id}, frame {k} saved')
-                    else:
-                        print(f'----Already exists: logid:{log_id}, frame {k}')
+                    np.savez_compressed(points_path, **final_points)
+                    np.savez_compressed(poses_path, **final_poses)
+                    np.savez_compressed(labels_path, **final_labels)
+                    # print(f'logid:{log_id}, frame {k} saved')
+                    # else:
+                    #     print(f'----Already exists: logid:{log_id}, frame {k}')
 
 
     def convert_one_frame(self,cur_index, pre, post,seq_dict):
@@ -441,11 +439,11 @@ class DatasetTransformer:
             if i != cur_index:
                 for j in range(len(seq_dict[i]['bboxes_id'])):
                     if seq_dict[i]['bboxes_id'][j] not in seq_dict[cur_index]['bboxes_id']:
-                        mask = points_in_box(seq_dict[i]['bboxes_corner'][j],seq_dict[i]['points_all'])
+                        mask = points_in_box(seq_dict[i]['bboxes_corner'][j],seq_dict[i]['points_all'][:-1])
                         seq_dict[i]['points_all'] = np.delete(seq_dict[i]['points_all'],mask, axis=1)
                         seq_dict[i]['points_labels_all']=np.delete(seq_dict[i]['points_labels_all'],mask)
                     else:
-                        mask = points_in_box(seq_dict[i]['bboxes_corner'][j],seq_dict[i]['points_all'])
+                        mask = points_in_box(seq_dict[i]['bboxes_corner'][j],seq_dict[i]['points_all'][:-1])
                         if not np.any(mask): continue
                         index = np.where(seq_dict[cur_index]['bboxes_id']==seq_dict[i]['bboxes_id'][j])[0][0]
                         dst_box = np.copy(seq_dict[cur_index]['bboxes_corner'][index])
@@ -461,12 +459,12 @@ class DatasetTransformer:
                         c = np.expand_dims(c_dst - c_src @ R, 1)
 
                         curr_points = np.copy(seq_dict[i]['points_all'][:, mask])
-                        curr_points= np.add(R.T @ curr_points, c)
+                        curr_points[:-1] = np.add(R.T @ curr_points[:-1], c)
 
                         src_pose = seq_dict[i]['vehicle2global']
                         dst_pose = seq_dict[cur_index]['vehicle2global']
-                        new_points = np.linalg.inv(src_pose) @ dst_pose @ np.vstack((curr_points, np.ones((1, curr_points.shape[1]))))
-                        seq_dict[i]['points_all'][:, mask] = new_points[:-1]
+                        new_points = np.linalg.inv(src_pose) @ dst_pose @ curr_points
+                        seq_dict[i]['points_all'][:, mask] = new_points
                         seq_dict[i]['points_labels_all'][mask] = label_remap[seq_dict[i]['labels'][j]]
 
 
@@ -511,11 +509,10 @@ if __name__ == "__main__":
     logger.info(args)
     folders = glob.glob(args.dataset_dir+ '/*/')
     log_ids = [folder.split('/')[-2] for folder in folders]
+    print(log_ids)
+    process_one_log(log_ids[0], args)
 
-    arguments = [(log_id,args) for log_id in log_ids]
-    with Pool(40) as p:
-        print("Start multiprocessing.")
-        p.starmap(process_one_log, arguments)
-
-
-
+    # arguments = [(log_id,args) for log_id in log_ids]
+    # with Pool(40) as p:
+    #     print("Start multiprocessing.")
+    #     p.starmap(process_one_log, arguments)
