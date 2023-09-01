@@ -23,7 +23,6 @@ from collections import OrderedDict
 import math
 import pickle as pkl
 from PIL import Image
-import tqdm
 import numpy as np
 from multiprocessing import Pool
 from tqdm import tqdm
@@ -190,6 +189,7 @@ class DatasetTransformer:
         dataset_dir: str,
         output_dir:str,
         experiment_prefix: str,
+        seq_idx: int,
         use_existing_files: bool = True,
         log_id: str = None,
     ) -> None:
@@ -200,6 +200,7 @@ class DatasetTransformer:
         self.dataset_dir = dataset_dir
         self.labels_dir = dataset_dir
         self.output_dir = output_dir
+        self.seq_idx = seq_idx
         self.sdb = SynchronizationDB(self.dataset_dir)
         self.dl = SimpleArgoverseTrackingDataLoader(data_dir=dataset_dir, labels_dir=dataset_dir)
         self.am = ArgoverseMap()
@@ -249,7 +250,7 @@ class DatasetTransformer:
                 logger.info(f"Log: {log_id}")
 
                 ply_fpaths = sorted(glob.glob(f"{self.dataset_dir}/{log_id}/lidar/PC_*.ply"))
-                img_dir = f"{self.output_dir}/image/{log_id}/"
+                img_dir = f"{self.output_dir}/image/{self.seq_idx:04d}/"
                 if not os.path.exists(img_dir):
                     os.makedirs(img_dir)
 
@@ -263,7 +264,7 @@ class DatasetTransformer:
                         if i != idx:
                             continue
                     if i % 500 == 0:
-                        logger.info(f"\tOn file {i} of {log_id}")
+                        logger.info(f"\tOn file {i} of {self.seq_idx:04d}")
                     lidar_timestamp = ply_fpath.split("/")[-1].split(".")[0].split("_")[-1]
                     lidar_timestamp = int(lidar_timestamp)
                     if lidar_timestamp not in self.log_egopose_dict[log_id]:
@@ -272,7 +273,7 @@ class DatasetTransformer:
                         logger.info(f"{diff:.2f} sec before first labeled sweep")
                         continue
 
-                    logger.info(f"\tt={lidar_timestamp}")
+                    # logger.info(f"\tt={lidar_timestamp}")
                     pose_city_to_ego = self.log_egopose_dict[log_id][lidar_timestamp]
 
                     ego_center_xyz = np.array(pose_city_to_ego["translation"]) 
@@ -391,32 +392,30 @@ class DatasetTransformer:
 
                         img_path = f"{self.dl.data_dir}/{log_id}/{cam_name}/{cam_name}_{cam_timestamp}.jpg"
                         save_file_name = "{:04d}_{}.jpg".format(i, cam_name)
-                        img_save_path = os.path.join(self.output_dir, "image", str(log_id), save_file_name)
+                        img_save_path = os.path.join(self.output_dir, "image", f"{self.seq_idx:04d}", save_file_name)
                         shutil.copy(img_path, img_save_path)
 
 
                     if last_timestamp ==0:
                         last_timestamp = lidar_timestamp
 
-                        save_path_calib = os.path.join(self.output_dir, "calib",str(log_id))
+                        save_path_calib = os.path.join(self.output_dir, "calib",f"{self.seq_idx:04d}")
                         if not os.path.exists(save_path_calib):
                             os.makedirs(save_path_calib)
 
-                        np.savez_compressed(os.path.join(os.path.join(self.output_dir,'calib', str(log_id)), "cam_intrinsics"), **cam_intrinsics)
-                        np.savez_compressed(os.path.join(os.path.join(self.output_dir,'calib', str(log_id)), "cam_extrinsics"), **cam_extrinsics)
+                        np.savez_compressed(os.path.join(os.path.join(self.output_dir,'calib', f"{self.seq_idx:04d}"), "cam_intrinsics"), **cam_intrinsics)
+                        np.savez_compressed(os.path.join(os.path.join(self.output_dir,'calib', f"{self.seq_idx:04d}"), "cam_extrinsics"), **cam_extrinsics)
 
 
                 # Convert all frames in the scene.
                 for k in tqdm(range(len(seq_dict))):
-                    # if 0 <= k < 50 :
-                    # if not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_point.npz".format(k))) and  not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_pose.npz".format(k))) and not os.path.exists(os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_label.npz".format(k))):
                     final_points, final_poses, final_labels = self.convert_one_frame(k,pre,post,copy.deepcopy(seq_dict))
-                    save_path_pcd = os.path.join(self.output_dir, "point_cloud",str(log_id))
+                    save_path_pcd = os.path.join(self.output_dir, "point_cloud",f"{self.seq_idx:04d}")
                     if not os.path.exists(save_path_pcd):
                         os.makedirs(save_path_pcd)
-                    points_path = os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_point".format(k))
-                    poses_path = os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_pose".format(k))
-                    labels_path = os.path.join(self.output_dir, "point_cloud",str(log_id), "{:04d}_label".format(k))
+                    points_path = os.path.join(self.output_dir, "point_cloud",f"{self.seq_idx:04d}", "{:04d}_point".format(k))
+                    poses_path = os.path.join(self.output_dir, "point_cloud",f"{self.seq_idx:04d}", "{:04d}_pose".format(k))
+                    labels_path = os.path.join(self.output_dir, "point_cloud",f"{self.seq_idx:04d}", "{:04d}_label".format(k))
 
                     np.savez_compressed(points_path, **final_points)
                     np.savez_compressed(poses_path, **final_poses)
@@ -474,12 +473,13 @@ class DatasetTransformer:
         
         return final_points, final_poses, final_labels
 
-def process_one_log(log_id,args):
+def process_one_log(log_id, seq_idx,args):
 
     df = DatasetTransformer(
         args.dataset_dir,
         args.output_path,
         args.experiment_prefix,
+        seq_idx,
         log_id=log_id,
         use_existing_files=args.use_existing_files,
     )
@@ -510,7 +510,8 @@ if __name__ == "__main__":
     folders = glob.glob(args.dataset_dir+ '/*/')
     log_ids = [folder.split('/')[-2] for folder in folders]
     print(log_ids)
-    process_one_log(log_ids[0], args)
+    seq_idx = 0
+    process_one_log(log_ids[0], seq_idx, args)
 
     # arguments = [(log_id,args) for log_id in log_ids]
     # with Pool(40) as p:
