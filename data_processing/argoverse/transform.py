@@ -372,12 +372,6 @@ class DatasetTransformer:
                         cam_timestamp = self.sdb.get_closest_cam_channel_timestamp(lidar_timestamp, cam_name, log_id)
 
                         logger.info(f"\tt={cam_timestamp}")
-                        if get_city_SE3_egovehicle_at_sensor_t(cam_timestamp, self.dataset_dir, log_id):
-                            city_SE3_egovehicle = get_city_SE3_egovehicle_at_sensor_t(cam_timestamp, self.dataset_dir, log_id)
-                        else:
-                            raise RuntimeError(
-                                f"Could not get city to egovehicle coordinate transformation at timestamp {cam_timestamp}"
-                            )
 
                         cam_config = self.dl.get_log_camera_config(log_id,cam_name)
                         extrinsics = cam_config.extrinsic
