@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from baselines.models.conv2d import Encoder, Decoder
+from .conv2d import Encoder, Decoder
 
 
 class ConvLSTMCell(nn.Module):
