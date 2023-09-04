@@ -149,7 +149,7 @@ class Decoder(nn.Module):
 
 
 class Conv3DForecasting(nn.Module):
-    def __init__(self, p_pre, p_post):
+    def __init__(self, p_pre, p_post, use_soft_iou=False):
         super().__init__()
 
         self.p_pre = p_pre
@@ -164,7 +164,9 @@ class Conv3DForecasting(nn.Module):
         )
         self.decoder = Decoder(self.encoder.out_channels, _out_channels)
         self.bce = nn.BCEWithLogitsLoss()
-        self.soft_iou = SoftIoUWithSigmoidLoss()
+        self.use_soft_iou = use_soft_iou
+        if self.use_soft_iou:
+            self.soft_iou = SoftIoUWithSigmoidLoss()
 
     def forward(self, input_occ=None, gt_occ=None, invalid_mask=None):
         # w/ skip connection
@@ -175,7 +177,10 @@ class Conv3DForecasting(nn.Module):
             gt_occ[gt_occ > 0] = 1
             valid_gt = gt_occ[~invalid_mask]
             bce_loss = self.bce(valid_output, valid_gt.to(torch.float32))
-            soft_iou_loss = self.soft_iou(valid_output, valid_gt)
-            return 0.5 * bce_loss + 0.5 * soft_iou_loss
+            if self.use_soft_iou:
+                soft_iou_loss = self.soft_iou(valid_output, valid_gt)
+                return 0.5 * bce_loss + 0.5 * soft_iou_loss
+            else:
+                return bce_loss
         else:
             return output
