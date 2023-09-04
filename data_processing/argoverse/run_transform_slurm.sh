@@ -3,7 +3,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=12
 #SBATCH --array=0-23
-#SBATCH --time=3:00:00
+#SBATCH --time=8:00:00
 #SBATCH --mem=12GB
 #SBATCH --job-name=argoverse
 #SBATCH --mail-type=ALL

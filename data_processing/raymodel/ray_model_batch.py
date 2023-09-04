@@ -123,7 +123,7 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
         final_input.append((input_voxel_state == 1).cpu().numpy())
 
     # Read and process ground truth
-    for i in tqdm(range(index, index+args.p_post+1), leave=False):
+    for i in tqdm(range(index, index+args.p_post+1), leave=False, disable=True):
         points = []
         origins = []
         labels = []

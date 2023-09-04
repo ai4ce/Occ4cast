@@ -18,6 +18,7 @@ singularity exec --nv \
 	    /scratch/work/public/singularity/cuda11.8.86-cudnn8.7-devel-ubuntu22.04.2.sif \
 	    /bin/bash -c "source /ext3/env.sh; 
         python train.py -d lyft \
+            -m conv3d
             -r /vast/xl3136/lyft_kitti \
             --p_pre 5 \
             --p_post 5 \
