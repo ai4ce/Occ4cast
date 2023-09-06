@@ -1,6 +1,6 @@
 ## Environments:
 * torch=2.0
-* torchmetrics
+* torchmetrics=1.1.1
 * tqdm
 
 ## Run
