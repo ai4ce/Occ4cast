@@ -81,6 +81,8 @@ def eval(args):
         model = ConvLSTM(config.p_pre+1, config.p_post+1, voxel_size[-2])
     elif config.model.lower() == "conv3d":
         model = Conv3DForecasting(config.p_pre+1, config.p_post+1)
+    elif args.model.lower() == "conv3d_softiou":
+        model = Conv3DForecasting(args.p_pre+1, args.p_post+1, use_soft_iou=True)
     else:
         raise NotImplementedError(f"Model {config.model} is not supported.")
     model = model.to(device)
