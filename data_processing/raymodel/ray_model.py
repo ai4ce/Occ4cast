@@ -74,7 +74,7 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     # Define lyft to kitti rotation matrix
     if args.data_type == 'lyft':
         rotation = Quaternion(axis=(0, 0, 1), angle=np.pi)
-    elif args.data_type == 'argoverse':
+    elif args.data_type in ['argoverse', 'apolloscape']:
         rotation = Quaternion(axis=(0, 0, 1), angle=0)
     else:
         raise NotImplementedError
@@ -219,7 +219,8 @@ if __name__ == "__main__":
             os.makedirs(save_dir)
         start_frame = args.p_pre
         end_frame = len(velodyne_files) - args.p_post
-        for j in tqdm(range(start_frame, end_frame), leave=False):
+        # for j in tqdm(range(start_frame, end_frame), leave=False):
+        for j in tqdm(range(10, 11), leave=False):
             main_func(
                 velodyne_files, 
                 poses_files, 

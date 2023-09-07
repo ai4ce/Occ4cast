@@ -74,7 +74,7 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     # Define lyft to kitti rotation matrix
     if args.data_type == 'lyft':
         rotation = Quaternion(axis=(0, 0, 1), angle=np.pi)
-    elif args.data_type == 'argoverse':
+    elif args.data_type in ['argoverse', 'apolloscape']:
         rotation = Quaternion(axis=(0, 0, 1), angle=0)
     else:
         raise NotImplementedError
