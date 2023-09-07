@@ -11,7 +11,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--data_path', type=str, default='/media/rua/44BCDF28BCDF12F21/ApolloScape/tracking', help='path to the dataset')
 parser.add_argument('-b', '--batch', type=int, default=0, help='batch job index')
 parser.add_argument('-s', '--start', type=int, default=0, help='start index of the scene')
-parser.add_argument('-e', '--end', type=int, default=10, help='end index of the scene')
 parser.add_argument('-o', '--output_path', type=str, default='./ApolloScape', help='path to the output')
 parser.add_argument('--a_pre', type=int, default=70, help='number of frames to aggregrate before the current frame')
 parser.add_argument('--a_post', type=int, default=70, help='number of frames to aggregrate after the current frame')
@@ -149,7 +148,7 @@ def convert_one_frame(id, trip_id, segment_id, frame_idx):
 
 
 if __name__ == "__main__":
-    print('Start converting dataset, scene: {} - {}'.format(args.start, args.end))
+    print('Start converting dataset, scene: {}'.format(args.start+args.batch))
     id = dataset.id
     absoulte_scene_index = 0
     
@@ -161,6 +160,6 @@ if __name__ == "__main__":
             id_mapping[absoulte_scene_index] = (trip_id, segment_id)
             absoulte_scene_index += 1
 
-    for i in range(args.start, args.end):
-        trip_id, segment_id = id_mapping[i]
-        convert_one_scene(id, trip_id, segment_id, i)
+    i = args.start + args.batch
+    trip_id, segment_id = id_mapping[i]
+    convert_one_scene(id, trip_id, segment_id, i)

@@ -4,3 +4,5 @@ Cython
 matplotlib
 numpy
 Pillow
+scipy
+tqdm
