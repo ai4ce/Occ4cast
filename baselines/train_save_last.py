@@ -154,23 +154,6 @@ def train(args):
 
         print(f"Epoch {epoch} train loss {train_loss / num_batch:.6f}")
 
-        # save last model
-        last_path = f"{ckpt_dir}/last.pth"
-        save_last_dict = {
-            "epoch": epoch,
-            "n_iter": n_iter,
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-            "scheduler_state_dict": scheduler.state_dict(),
-        }
-        if args.amp:
-            save_last_dict["scaler_state_dict"] = scaler.state_dict()
-        torch.save(
-            save_last_dict,
-            last_path,
-        )
-        print(f"Last model saved to {last_path}")
-
         num_batch = len(val_loader)
         val_metric = {"precision": 0, "recall": 0, "f1": 0, "iou": 0, "ap": 0}
         with torch.no_grad():
@@ -222,6 +205,23 @@ def train(args):
                 ckpt_path,
             )
             print(f"Save model to {ckpt_path}")
+        # save last model
+        last_path = f"{ckpt_dir}/last.pth"
+        save_last_dict = {
+            "epoch": epoch,
+            "n_iter": n_iter,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict(),
+        }
+        if args.amp:
+            save_last_dict["scaler_state_dict"] = scaler.state_dict()
+        torch.save(
+            save_last_dict,
+            last_path,
+        )
+        print(f"Last model saved to {last_path}")
+        
         scheduler.step()
 
 
