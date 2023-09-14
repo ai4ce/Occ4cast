@@ -12,6 +12,8 @@ from torch.utils.data import DataLoader
 
 from models import Conv2DForecasting, Conv3DForecasting, ConvLSTM
 
+RESUME_LAST=0
+
 def make_data_loaders(args):
     if args.dataset.lower() == "lyft":
         from data.lyft import LyftDataset
@@ -24,6 +26,21 @@ def make_data_loaders(args):
         )
         val_loader = DataLoader(
             LyftDataset(args.dataroot, "valid", args.p_pre, args.p_post),
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=args.num_workers,
+        )
+    elif args.dataset.lower() == "argoverse":
+        from data.argoverse import ArgoverseDataset
+
+        train_loader = DataLoader(
+            ArgoverseDataset(args.dataroot, "train", args.p_pre, args.p_post),
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=args.num_workers,
+        )
+        val_loader = DataLoader(
+            ArgoverseDataset(args.dataroot, "valid", args.p_pre, args.p_post),
             batch_size=args.batch_size,
             shuffle=True,
             num_workers=args.num_workers,
@@ -45,14 +62,19 @@ def mkdir_if_not_exists(d):
 
 def resume_from_ckpts(ckpt_dir, model, optimizer, scheduler, scaler=None, amp=False):
     if len(os.listdir(ckpt_dir)) > 0:
-        pattern = re.compile(r"model_epoch_(\d+).pth")
-        epochs = []
-        for f in os.listdir(ckpt_dir):
-            m = pattern.findall(f)
-            if len(m) > 0:
-                epochs.append(int(m[0]))
-        resume_epoch = max(epochs)
-        ckpt_path = f"{ckpt_dir}/model_epoch_{resume_epoch}.pth"
+        
+        if RESUME_LAST:
+            ckpt_path = f"{ckpt_dir}/last.pth"
+        else:
+            pattern = re.compile(r"model_epoch_(\d+).pth")
+            epochs = []
+            for f in os.listdir(ckpt_dir):
+                m = pattern.findall(f)
+                if len(m) > 0:
+                    epochs.append(int(m[0]))
+            resume_epoch = max(epochs)
+            ckpt_path = f"{ckpt_dir}/model_epoch_{resume_epoch}.pth"
+
         print(f"Resume training from checkpoint {ckpt_path}")
 
         checkpoint = torch.load(ckpt_path)
@@ -197,6 +219,23 @@ def train(args):
                 ckpt_path,
             )
             print(f"Save model to {ckpt_path}")
+
+        # save last model
+        last_path = f"{ckpt_dir}/last.pth"
+        save_last_dict = {
+            "epoch": epoch,
+            "n_iter": n_iter,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict(),
+        }
+        if args.amp:
+            save_last_dict["scaler_state_dict"] = scaler.state_dict()
+        torch.save(
+            save_last_dict,
+            last_path,
+        )
+        print(f"Last model saved to {last_path}")
         scheduler.step()
 
 
@@ -204,7 +243,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     data_group = parser.add_argument_group("data")
-    data_group.add_argument('-d', "--dataset", type=str, default="lyft")
+    data_group.add_argument('-d', "--dataset", type=str, default="argoverse")
     data_group.add_argument('-r', "--dataroot", type=str, default="/home/xl3136/lyft_kitti")
     data_group.add_argument("--p_pre", type=int, default=10)
     data_group.add_argument("--p_post", type=int, default=10)
