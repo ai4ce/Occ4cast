@@ -34,6 +34,16 @@ def make_data_loaders(args, dataroot):
             shuffle=False,
             num_workers=args.num_workers,
         )
+    elif args.dataset.lower() == "apolloscape":
+        from data.apolloscape import ApolloScapeDataset
+
+        eval_dataset = ApolloScapeDataset(args.dataroot, "test", args.p_pre, args.p_post)
+        val_loader = DataLoader(
+            eval_dataset
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.num_workers,
+        )
     else:
         raise NotImplementedError(f"Dataset {args.dataset} is not supported.")
     
