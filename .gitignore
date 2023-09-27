@@ -1,7 +1,8 @@
-# log
+# misc
 *.out
 *.err
 baselines/results/
+misc/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
