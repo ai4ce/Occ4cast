@@ -100,7 +100,7 @@ class Window:
         # lst = ["unlabeled", "car", "bicycle", "motorcycle", "truck", "other-vehicle", "person", "bicyclist",
         #        "motorcyclist", "road", "parking", "sidewalk", "other-ground", "building", "fence",
         #        "vegetation", "trunk", "terrain", "pole", "traffic-sign"]
-        lst = ["free", "unlabeled", "animal", "bicycle", "bus", "car", "emergency_vehicle", "motorcycle", "other_vehicle", "pedestrain", "truck"]
+        lst = ["free", "unlabeled", "vehicle", "pedestrain", "on_road_obstacle", "large_vehicle", "bicycle", "bicyclist", "bus", "other_mover", "trailer", "motorcyclist", "moped", "motorcycle", "stroller", "emergency_vehicle", "animal"]
         predict_color_dict = {}
         self.learning_map={}
         for key,value in tmp_learning_map.items():
@@ -663,7 +663,7 @@ class Window:
             self.program["view_mat"] = (self.cam.matrix @ self.conversion_).transpose()
             # different brightness
             self.program["lightPos"] = glow.vec3(10, 10, 10)
-            self.program["voxel_scale"] = 0.8
+            self.program["voxel_scale"] = 1
             self.program["voxel_alpha"] = 1.0
             self.program["use_label_colors"] = True
 
@@ -714,7 +714,7 @@ class Window:
             self.program["voxel_alpha"] = 0.5
 
             for data_name in showData:
-                self.program["voxel_scale"] = 0.5
+                self.program["voxel_scale"] = 1
                 if data_name == "input": self.program["voxel_scale"] = 0.8
 
                 self.setCurrentBufferData(data_name, self.currentTimestep)
@@ -764,7 +764,7 @@ if __name__ == "__main__":
 
     FLAGS, unparsed = parser.parse_known_args()
 
-    sequence_directory = os.path.join(FLAGS.dataset, "sequences", FLAGS.sequence)
+    sequence_directory = os.path.join(FLAGS.dataset)
 
     window = Window()
     window.open_directory(sequence_directory)
