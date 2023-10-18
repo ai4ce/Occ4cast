@@ -6,7 +6,7 @@
 [Moonjun Gong](https://moonjungong.github.io/)\*, 
 [Qi Fang](https://scholar.google.com/citations?user=LIuiQlkAAAAJ),
 [Haoyu Xie](.),
-[Yiming Li](https://roboticsyimingli.github.io/),  
+[Yiming Li](https://roboticsyimingli.github.io/),
 [Hang Zhao](https://hangzhaomit.github.io/), 
 [Chen Feng](https://engineering.nyu.edu/faculty/chen-feng)
 
