@@ -51,5 +51,3 @@ If you find our work useful in your research, please consider citing:
 # Related Projects
 * [Point Cloud Forecasting as a Proxy for 4D Occupancy Forecasting](https://github.com/tarashakhurana/4d-occ-forecasting), CVPR 2023
 * [SSCBench: Monocular 3D Semantic Scene Completion Benchmark in Street Views](https://github.com/ai4ce/SSCBench), arXiv 2023
-* []
-
