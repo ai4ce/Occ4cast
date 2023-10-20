@@ -10,7 +10,7 @@
 [Hang Zhao](https://hangzhaomit.github.io/), 
 [Chen Feng](https://engineering.nyu.edu/faculty/chen-feng)
 
-<img src="./src/teaser.gif" width="100%"/>
+![](./src/teaser.gif)
 
 # News
 * [2023/10]: The preprint version is available on [arXiv](https://arxiv.org/abs/2310.11239).
