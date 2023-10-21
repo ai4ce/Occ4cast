@@ -22,7 +22,7 @@ Scene completion and forecasting are two popular perception problems in research
 
 # Getting Started
 ## Installation
-The code is tested with Python 3.9 and Pytorch 2.0.1. Please install dependencies by
+The code is tested with Python 3.9, Pytorch 2.0.1, and CUDA 11.8. Please install dependencies by
 ```
 conda create -n occ4cast python=3.9
 conda activate occ4cast
