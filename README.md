@@ -46,7 +46,7 @@ bash run_train.sh
 # Related Projects
 * [Point Cloud Forecasting as a Proxy for 4D Occupancy Forecasting](https://github.com/tarashakhurana/4d-occ-forecasting), CVPR 2023
 * [SSCBench: Monocular 3D Semantic Scene Completion Benchmark in Street Views](https://github.com/ai4ce/SSCBench), arXiv 2023
-* [Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving](https://github.com/Tsinghua-MARS-Lab/Occ3D)
+* [Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving](https://github.com/Tsinghua-MARS-Lab/Occ3D), arXiv 2023
 
 # Citation
 If you find our work useful in your research, please consider citing:
