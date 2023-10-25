@@ -1,8 +1,6 @@
 # Occ4cast: LiDAR-based 4D Occupancy Completion and Forecasting
 
-[[PDF]](https://arxiv.org/abs/2310.11239)
-[[Website]](https://ai4ce.github.io/Occ4cast/)
-[[Dataset]](https://huggingface.co/datasets/ai4ce/OCFBench)
+<a href='https://arxiv.org/abs/2310.11239'><img src='https://img.shields.io/badge/Paper-arXiv-red'></a> <a href='https://ai4ce.github.io/Occ4cast/'><img src='https://img.shields.io/badge/Project-website-green'></a> <a href='https://huggingface.co/datasets/ai4ce/OCFBench'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Dataset-blue'></a>
 
 [Xinhao Liu](https://gaaaavin.github.io/)\*,
 [Moonjun Gong](https://moonjungong.github.io/)\*, 
