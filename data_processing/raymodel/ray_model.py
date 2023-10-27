@@ -220,7 +220,7 @@ if __name__ == "__main__":
         start_frame = args.p_pre
         end_frame = len(velodyne_files) - args.p_post
         # for j in tqdm(range(start_frame, end_frame), leave=False):
-        for j in tqdm(range(10, 11), leave=False):
+        for j in tqdm(range(20, 21), leave=False):
             main_func(
                 velodyne_files, 
                 poses_files, 

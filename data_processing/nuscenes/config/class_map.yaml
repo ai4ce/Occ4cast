@@ -1,0 +1,11 @@
+free: 0
+unlabeled: 1
+animal: 2
+bicycle: 3
+bus: 4
+car: 5
+emergency_vehicle: 6
+motorcycle: 7
+other_vehicle: 8
+pedestrian: 9
+truck: 10
