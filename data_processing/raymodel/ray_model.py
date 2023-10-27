@@ -34,7 +34,7 @@ torch.backends.cudnn.allow_tf32 = False
 
 parser = argparse.ArgumentParser(description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-s', '--start', type=int, default=0)
-parser.add_argument('-e', '--end', type=int, default=10)
+parser.add_argument('-b', '--batch', type=int, default=0, help='batch job index')
 parser.add_argument('--a_pre', type=int, default=70, help='number of frames to aggregrate before the current frame')
 parser.add_argument('--a_post', type=int, default=70, help='number of frames to aggregrate after the current frame')
 parser.add_argument('--p_pre', type=int, default=10, help='number of frames to input before the current frame')
@@ -72,7 +72,7 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     pose_origin_inv = np.linalg.inv(np.load(pose_files[index])["{}_LIDAR_TOP".format(index)])
 
     # Define lyft to kitti rotation matrix
-    if args.data_type == 'lyft':
+    if args.data_type in ["lyft", "nusc"]:
         rotation = Quaternion(axis=(0, 0, 1), angle=np.pi)
     elif args.data_type in ['argoverse', 'apolloscape']:
         rotation = Quaternion(axis=(0, 0, 1), angle=0)
@@ -123,7 +123,7 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
         final_input.append((input_voxel_state == 1).cpu().numpy())
 
     # Read and process ground truth
-    for i in tqdm(range(index, index+args.p_post+1), leave=False):
+    for i in tqdm(range(index, index+args.p_post+1), leave=False, disable=True):
         points = []
         origins = []
         labels = []
@@ -178,13 +178,14 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     final_invalid = np.stack(final_invalid, axis=0)
     
     if not vis:
-        save_path = os.path.join(save_dir, "{:04d}".format(index))
-        save_dict = {
-            "input": final_input,
-            "label": final_label,
-            "invalid": final_invalid,
-        }
-        np.savez_compressed(save_path, **save_dict)
+        final_input = final_input.astype(np.uint8)
+        final_label = final_label.astype(np.uint8)
+        final_invalid = final_invalid.astype(np.uint8)
+        final_input = np.packbits(final_input.ravel())
+        final_invalid = np.packbits(final_invalid.ravel())
+        np.save(os.path.join(save_dir, f"{str(index).zfill(6)}_input.npy"), final_input)
+        np.save(os.path.join(save_dir, f"{str(index).zfill(6)}_label.npy"), final_label)
+        np.save(os.path.join(save_dir, f"{str(index).zfill(6)}_invalid.npy"), final_invalid)
     else:     
         for i in range(index-args.p_pre, index+1):
             save_input = final_input[i-(index-args.p_pre)].astype(np.uint8)
@@ -209,24 +210,23 @@ if __name__ == "__main__":
     if not os.path.exists(out_dir): 
         os.makedirs(out_dir)
 
-    for i in tqdm(range(args.start, args.end)):
-        velodyne_files = sorted(glob(os.path.join(velodyne_dir, "{:04d}".format(i), "*_point.npz")))
-        poses_files = sorted(glob(os.path.join(velodyne_dir, "{:04d}".format(i), "*_pose.npz")))
-        labels_files = sorted(glob(os.path.join(velodyne_dir, "{:04d}".format(i), "*_label.npz")))
-        
-        save_dir = os.path.join(out_dir, "{:04d}".format(i))
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        start_frame = args.p_pre
-        end_frame = len(velodyne_files) - args.p_post
-        # for j in tqdm(range(start_frame, end_frame), leave=False):
-        for j in tqdm(range(20, 21), leave=False):
-            main_func(
-                velodyne_files, 
-                poses_files, 
-                labels_files, 
-                save_dir, 
-                j,
-                args,
-                args.vis,
-            )
+    i = args.start + args.batch
+    velodyne_files = sorted(glob(os.path.join(velodyne_dir, "{:04d}".format(i), "*_point.npz")))
+    poses_files = sorted(glob(os.path.join(velodyne_dir, "{:04d}".format(i), "*_pose.npz")))
+    labels_files = sorted(glob(os.path.join(velodyne_dir, "{:04d}".format(i), "*_label.npz")))
+    
+    save_dir = os.path.join(out_dir, "{:04d}".format(i))
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    start_frame = args.p_pre
+    end_frame = len(velodyne_files) - args.p_post
+    for j in tqdm(range(start_frame, end_frame), leave=False):
+        main_func(
+            velodyne_files, 
+            poses_files, 
+            labels_files, 
+            save_dir, 
+            j,
+            args,
+            args.vis,
+        )
