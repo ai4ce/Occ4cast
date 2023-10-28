@@ -13,6 +13,7 @@
 ![](./src/teaser.gif)
 
 # News
+* [2023/10]: OCFBech-nuScenes is available on [Hugging Face](https://huggingface.co/datasets/ai4ce/OCFBench/tree/main/OCFBench-nuScenes).
 * [2023/10]: The preprint version is available on [arXiv](https://arxiv.org/abs/2310.11239). The OCFBench dataset is available on [Hugging Face](https://huggingface.co/datasets/ai4ce/OCFBench).
 
 # Abstract
@@ -38,7 +39,9 @@ bash run_train.sh
 ```
 
 # TODO
-- [ ] Add nuScnes and Waymo dataset.
+- [ ] Add Waymo dataset.
+- [x] Add nuScenes dataset.
+
 
 
 # Related Projects
