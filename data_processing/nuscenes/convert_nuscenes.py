@@ -24,7 +24,7 @@ with open('config/class_map.yaml', 'r') as f:
     class_map = yaml.safe_load(f)
 
 # lyft_data = NuScenes(data_path=args.data_path, json_path=args.data_path + '/{}_data'.format(args.data_path.split("/")[-1]), verbose=True)
-nusc_data = NuScenes(version='v1.0-mini', dataroot=args.data_path)
+nusc_data = NuScenes(version='v1.0-trainval', dataroot=args.data_path)
 
 config = {
     "aggregate_pre": args.a_pre,

@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=4
-#SBATCH --array=0-89
+#SBATCH --cpus-per-task=8
+#SBATCH --array=0-849
 #SBATCH --time=1:00:00
 #SBATCH --mem=8GB
 #SBATCH --job-name=raymodel
@@ -17,13 +17,13 @@ A_PRE=70
 A_POST=70
 P_PRE=10
 P_POST=10
-INPUT=/vast/xl3136/lyft_kitti/train
+INPUT=/scratch/xl3136/dataset/OCFBench_nuScenes
 
 module purge
-cd /scratch/$USER/Occ4D/data_processing/lyft
+cd /scratch/$USER/Occ4cast/data_processing/raymodel
 
 singularity exec --nv \
-	    --overlay /scratch/$USER/environments/lyft.ext3:ro \
+	    --overlay /scratch/$USER/environments/nusc.ext3:ro \
 	    /scratch/work/public/singularity/cuda11.8.86-cudnn8.7-devel-ubuntu22.04.2.sif \
 	    /bin/bash -c "source /ext3/env.sh;
-        python ray_model_batch.py -i $INPUT -s $START -b ${SLURM_ARRAY_TASK_ID} --a_pre $A_PRE --a_post $A_POST --p_pre $P_PRE --p_post $P_POST"
+        python ray_model.py -i $INPUT -s $START -b ${SLURM_ARRAY_TASK_ID} --a_pre $A_PRE --a_post $A_POST --p_pre $P_PRE --p_post $P_POST"
