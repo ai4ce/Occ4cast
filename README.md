@@ -28,7 +28,7 @@ conda activate occ4cast
 pip install -r requirements.txt
 ```
 
-## Data Preparation
+## OCFBench
 Please refer to our [Hugging Face](https://huggingface.co/datasets/ai4ce/Occ4D) page for documentation and download.
 
 ## Training
