@@ -59,3 +59,7 @@ If you find our work useful in your research, please consider citing:
       year={2023}
 }
 ```
+
+# Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ai4ce/occ4cast&type=Date)](https://star-history.com/#ai4ce/occ4cast&Date)
