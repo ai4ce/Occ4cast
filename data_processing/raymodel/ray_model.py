@@ -72,8 +72,10 @@ def main_func(pcd_files, pose_files, label_files, save_dir, index, args, vis=Fal
     pose_origin_inv = np.linalg.inv(np.load(pose_files[index])["{}_LIDAR_TOP".format(index)])
 
     # Define lyft to kitti rotation matrix
-    if args.data_type in ["lyft", "nusc"]:
+    if args.data_type in ["lyft"]:
         rotation = Quaternion(axis=(0, 0, 1), angle=np.pi)
+    elif args.data_type == "nusc":
+        rotation = Quaternion(axis=(0, 0, 1), angle=-np.pi / 2)
     elif args.data_type in ['argoverse', 'apolloscape']:
         rotation = Quaternion(axis=(0, 0, 1), angle=0)
     else:
@@ -220,7 +222,8 @@ if __name__ == "__main__":
         os.makedirs(save_dir)
     start_frame = args.p_pre
     end_frame = len(velodyne_files) - args.p_post
-    for j in tqdm(range(start_frame, end_frame), leave=False):
+    # for j in tqdm(range(start_frame, end_frame), leave=False):
+    for j in tqdm(range(20, 21), leave=False):
         main_func(
             velodyne_files, 
             poses_files, 
