@@ -1,0 +1,89 @@
+# This file is covered by the LICENSE file in the root of this project.
+
+nbr_classes: 15
+labels:
+  0 : "unlabeled"
+  1 : "outlier"
+  10: "car"
+  11: "bicycle"
+  13: "bus"
+  15: "motorcycle"
+  16: "on-rails"
+  18: "truck"
+  20: "other-vehicle"
+  30: "person"
+  31: "bicyclist"
+  32: "motorcyclist"
+  40: "road"
+  44: "parking"
+  48: "sidewalk"
+  49: "other-ground"
+  50: "building"
+  51: "fence"
+  52: "other-structure"
+  60: "lane-marking"
+  70: "vegetation"
+  71: "trunk"
+  72: "terrain"
+  80: "pole"
+  81: "traffic-sign"
+  99: "other-object"
+  252: "moving-car"
+  253: "moving-bicyclist"
+  254: "moving-person"
+  255: "moving-motorcyclist"
+  256: "moving-on-rails"
+  257: "moving-bus"
+  258: "moving-truck"
+  259: "moving-other-vehicle"
+learning_map:
+  0 : 0     # "unlabeled"
+  1 : 0     # "outlier" mapped to "unlabeled" --------------------------mapped
+  10: 1     # "car"
+  11: 2     # "bicycle"
+  13: 1     # "bus"
+  15: 3     # "motorcycle"
+  16: 1     # "on-rails" mapped to "other-vehicle" ---------------------mapped
+  18: 1     # "truck"
+  20: 1     # "other-vehicle"
+  30: 4     # "person"
+  31: 5     # "bicyclist"
+  32: 5     # "motorcyclist"
+  40: 6     # "road"
+  44: 0    # "parking" ---ignore
+  48: 7    # "sidewalk"
+  49: 8   # "other-ground"
+  50: 9    # "building"
+  51: 0    # "fence" ---ignore
+  52: 0     # "other-structure" ---ignore
+  60: 6     # "lane-marking" mapped to "road"
+  70: 10    # "vegetation"
+  71: 11    # "trunk"
+  72: 0    # "terrain" ---ignore
+  80: 12    # "pole"
+  81: 13    # "traffic-sign"
+  99: 14     # "other-object"
+  252: 1    # "moving-car" to "car" ------------------------------------mapped
+  253: 5    # "moving-bicyclist" to "bicyclist" ------------------------mapped
+  254: 4    # "moving-person" to "person" ------------------------------mapped
+  255: 5    # "moving-motorcyclist" to "motorcyclist" ------------------mapped
+  256: 1    # "moving-on-rails" mapped to "other-vehicle" --------------mapped
+  257: 1    # "moving-bus" mapped to "bus" -------------------mapped
+  258: 1    # "moving-truck" to "truck" --------------------------------mapped
+  259: 1    # "moving-other"-vehicle to "other-vehicle" ----------------mapped
+learning_map_inv: # inverse of previous map
+  0: 0      # "unlabeled", and others ignored
+  1: 10     # "car"
+  2: 11     # "bicycle"
+  3: 15     # "motorcycle"
+  4: 30     # "person"
+  5: 31     # "bicyclist" + "motorcyclist"
+  6: 40    # "road" + "lane marking"
+  7: 48    # "sidewalk"
+  8: 49    # "other-ground"
+  9: 50    # "building"
+  10: 70    # "vegetation"
+  11: 71    # "trunk"
+  12: 80    # "pole"
+  13: 81    # "traffic-sign"
+  14: 99    # "other-object"
