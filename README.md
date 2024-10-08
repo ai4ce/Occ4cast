@@ -13,6 +13,8 @@
 ![](./src/teaser.gif)
 
 # News
+* [2024/09]: OCFBench-Waymo is now available on Hugging Face.
+* [2024/07]: Occ4cast is accepted to [IROS 2024](https://iros2024-abudhabi.org/).
 * [2023/10]: OCFBech-nuScenes is available on [Hugging Face](https://huggingface.co/datasets/ai4ce/OCFBench/tree/main/OCFBench-nuScenes).
 * [2023/10]: The preprint version is available on [arXiv](https://arxiv.org/abs/2310.11239). The OCFBench dataset is available on [Hugging Face](https://huggingface.co/datasets/ai4ce/OCFBench).
 
@@ -39,7 +41,7 @@ bash run_train.sh
 ```
 
 # TODO
-- [ ] Add Waymo dataset.
+- [x] Add Waymo dataset.
 - [x] Add nuScenes dataset.
 
 
